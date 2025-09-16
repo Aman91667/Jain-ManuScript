@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Jain Manuscripts Platform Design System
+Culturally respectful design with earthy tones and elegant typography.
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Parchment Background - Off-white/cream */
+    --background: 40 15% 96%;
+    --foreground: 20 20% 15%;
+
+    /* Cards with subtle parchment feel */
+    --card: 40 15% 98%;
+    --card-foreground: 20 20% 15%;
+
+    --popover: 40 15% 98%;
+    --popover-foreground: 20 20% 15%;
+
+    /* Saffron - Primary accent color */
+    --primary: 40 85% 55%;
+    --primary-foreground: 40 15% 98%;
+
+    /* Maroon - Secondary accent */
+    --secondary: 350 60% 35%;
+    --secondary-foreground: 40 15% 98%;
+
+    /* Muted earth tones */
+    --muted: 40 10% 90%;
+    --muted-foreground: 20 15% 45%;
+
+    /* Gold highlights */
+    --accent: 45 90% 60%;
+    --accent-foreground: 20 20% 15%;
+
+    /* Heritage red for important actions */
+    --destructive: 5 85% 55%;
+    --destructive-foreground: 40 15% 98%;
+
+    /* Subtle borders */
+    --border: 40 15% 85%;
+    --input: 40 15% 88%;
+    --ring: 40 85% 55%;
+
+    --radius: 0.75rem;
+
+    /* Custom gradients for elegant effects */
+    --gradient-saffron: linear-gradient(135deg, hsl(40 85% 55%), hsl(35 80% 45%));
+    --gradient-maroon: linear-gradient(135deg, hsl(350 60% 35%), hsl(345 55% 25%));
+    --gradient-gold: linear-gradient(135deg, hsl(45 90% 60%), hsl(40 85% 50%));
+    --gradient-parchment: linear-gradient(180deg, hsl(40 15% 98%), hsl(40 12% 94%));
+    --gradient-texture: radial-gradient(circle, hsl(40 15% 98% / 0.1), hsl(40 15% 96% / 0.3) 1px), radial-gradient(circle, hsl(40 15% 98% / 0.1), hsl(40 15% 96% / 0.3) 1px);
+    
+    /* Elegant shadows */
+    --shadow-soft: 0 4px 20px -8px hsl(20 20% 15% / 0.1);
+    --shadow-medium: 0 8px 30px -12px hsl(20 20% 15% / 0.15);
+    --shadow-strong: 0 16px 40px -16px hsl(20 20% 15% / 0.2);
+    --shadow-glow: 0 0 30px hsl(40 85% 55% / 0.3);
+
+    /* Smooth transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark parchment theme for evening reading */
+    --background: 20 15% 8%;
+    --foreground: 40 15% 92%;
+
+    --card: 20 15% 10%;
+    --card-foreground: 40 15% 92%;
+
+    --popover: 20 15% 10%;
+    --popover-foreground: 40 15% 92%;
+
+    /* Darker saffron */
+    --primary: 40 70% 50%;
+    --primary-foreground: 20 15% 8%;
+
+    /* Darker maroon */
+    --secondary: 350 50% 30%;
+    --secondary-foreground: 40 15% 92%;
+
+    --muted: 20 10% 15%;
+    --muted-foreground: 40 10% 65%;
+
+    /* Muted gold */
+    --accent: 45 70% 55%;
+    --accent-foreground: 20 15% 8%;
+
+    --destructive: 5 70% 50%;
+    --destructive-foreground: 40 15% 92%;
+
+    --border: 20 15% 20%;
+    --input: 20 15% 18%;
+    --ring: 40 70% 50%;
+
+    /* Dark theme gradients */
+    --gradient-saffron: linear-gradient(135deg, hsl(40 70% 45%), hsl(35 65% 35%));
+    --gradient-maroon: linear-gradient(135deg, hsl(350 50% 25%), hsl(345 45% 15%));
+    --gradient-gold: linear-gradient(135deg, hsl(45 70% 50%), hsl(40 65% 40%));
+    --gradient-parchment: linear-gradient(180deg, hsl(20 15% 10%), hsl(20 12% 6%));
+    --gradient-texture: radial-gradient(circle, hsl(20 15% 10% / 0.1), hsl(20 15% 8% / 0.3) 1px), radial-gradient(circle, hsl(20 15% 10% / 0.1), hsl(20 15% 8% / 0.3) 1px);
+
+    --shadow-soft: 0 4px 20px -8px hsl(0 0% 0% / 0.4);
+    --shadow-medium: 0 8px 30px -12px hsl(0 0% 0% / 0.5);
+    --shadow-strong: 0 16px 40px -16px hsl(0 0% 0% / 0.6);
+    --shadow-glow: 0 0 30px hsl(40 70% 50% / 0.4);
+
+    --sidebar-background: 20 15% 8%;
+    --sidebar-foreground: 40 15% 92%;
+    --sidebar-primary: 40 70% 50%;
+    --sidebar-primary-foreground: 20 15% 8%;
+    --sidebar-accent: 20 10% 15%;
+    --sidebar-accent-foreground: 40 15% 92%;
+    --sidebar-border: 20 15% 20%;
+    --sidebar-ring: 40 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  /* Add a custom scrollbar style */
+  ::-webkit-scrollbar {
+    width: 8px;
+    background-color: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+}
+
+@layer components {
+  /* Micro-animations for buttons and links */
+  .btn-hover {
+    @apply transition-all duration-300 hover:shadow-medium hover:-translate-y-0.5;
+  }
+
+  .link-hover {
+    @apply relative transition-colors duration-300;
+  }
+
+  .link-hover::after {
+    @apply absolute bottom-0 left-0 h-0.5 w-0 bg-primary transition-all duration-300 content-[''];
+  }
+
+  .link-hover:hover::after {
+    @apply w-full;
+  }
+
+  /* Ahimsa hand symbol styling */
+  .ahimsa-hand {
+    @apply text-primary transition-all duration-300 hover:text-accent;
+  }
+  
+  /* Bento grid animations */
+  .bento-card {
+    @apply transform transition-all duration-500 hover:scale-105 hover:shadow-strong;
+  }
+
+  .manuscript-card {
+    @apply relative overflow-hidden rounded-lg bg-gradient-to-br from-card to-muted/50 shadow-soft transition-all duration-300 hover:shadow-medium;
+  }
+
+  .manuscript-card::before {
+    @apply absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 transition-opacity duration-300 content-[''];
+  }
+
+  .manuscript-card:hover::before {
+    @apply opacity-100;
+  }
+
+  /* Page transition animations */
+  .page-enter {
+    @apply opacity-0 translate-y-4;
+  }
+
+  .page-enter-active {
+    @apply opacity-100 translate-y-0 transition-all duration-500;
+  }
+
+  .page-exit {
+    @apply opacity-100 translate-y-0;
+  }
+
+  .page-exit-active {
+    @apply opacity-0 -translate-y-4 transition-all duration-300;
+  }
+}
