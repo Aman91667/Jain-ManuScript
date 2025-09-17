@@ -9,31 +9,37 @@ const authRoutes = require('./routes/authRoutes');
 const manuscriptRoutes = require('./routes/manuscriptRoutes');
 const userRoutes = require('./routes/userRoutes');
 const helpRoutes = require('./routes/helpRoutes');
+const adminRoutes = require('./routes/adminRoutes'); // ✅ NEW: Import admin routes
 
 const app = express();
 
 // --- Middleware ---
-// ✅ FIX: This middleware must be placed here to parse incoming JSON bodies.
 app.use(express.json());
-
-// Enables Cross-Origin Resource Sharing for the frontend.
 app.use(cors());
+// ✅ Corrected path to serve the uploads folder from the project root
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// Serves static files from the 'uploads' directory.
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
-
-// --- Route Definitions ---
-// Binds the imported routers to their base paths.
+// --- API Route Definitions ---
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', adminRoutes); // ✅ NEW: Use admin routes
 app.use('/api/manuscripts', manuscriptRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/help', helpRoutes);
 
+// --- Frontend Serving ---
+// ✅ Corrected path to serve the frontend dist folder from the project root
+app.use(express.static(path.join(process.cwd(), 'frontend', 'dist')));
+
+// This is the catch-all route for your SPA. It must be the very last route.
+app.get(/.*/, (req, res) => {
+    // ✅ Corrected path to send the index.html file
+    res.sendFile(path.join(process.cwd(), 'frontend', 'dist', 'index.html'));
+});
+
 // --- Global Error Handler ---
-// This is a catch-all for any unhandled errors in the application.
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong on the server!' });
+    console.error(err.stack);
+    res.status(500).json({ message: 'Something went wrong on the server!' });
 });
 
 module.exports = app;

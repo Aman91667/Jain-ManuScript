@@ -1,40 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import RequestAccessButton from './RequestAccessButton';
-import {
-  Calendar,
-  User,
-  BookOpen,
-  Lock,
-  UserPlus,
+import { 
+  BookOpen, 
+  User, 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight,
+  Lock, 
+  UserPlus, 
   Eye,
   Globe,
-  Scroll,
+  Scroll
 } from 'lucide-react';
 
 interface Manuscript {
-  id: string;
+  _id: string;
   title: string;
-  author: string;
+  author?: string;
   category: string;
-  date: string;
+  createdAt: string;
   description: string;
-  thumbnail: string;
-  language: string;
-  summary?: string;
-  pages?: number;
-  significance?: string;
+  files: string[];
+  language?: string;
+  uploadType: 'normal' | 'detailed';
+  period?: string;
 }
 
 interface ManuscriptModalProps {
@@ -43,29 +37,30 @@ interface ManuscriptModalProps {
   onClose: () => void;
 }
 
-const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
-  manuscript,
-  isOpen,
-  onClose,
-}) => {
+const ManuscriptModal: React.FC<ManuscriptModalProps> = ({ manuscript, isOpen, onClose }) => {
   const { user, isAuthenticated } = useAuth();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!manuscript) return null;
-
-  // New logic for fine-grained access control
-  const isResearcher = user?.role === 'researcher';
-  const hasSpecificAccess = isResearcher && user?.approvedManuscripts.includes(manuscript.id);
-  const canAccessFull = isAuthenticated && hasSpecificAccess;
-
-  // Enhanced manuscript data for demonstration
-  const enhancedData = {
-    summary: manuscript.summary || `The ${manuscript.title} is a significant work in Jain literature, authored by ${manuscript.author}. This manuscript contains profound teachings on Jain philosophy, ethics, and spiritual practices. It represents an important contribution to understanding ancient Jain wisdom and continues to be studied by scholars worldwide.`,
-    pages: manuscript.pages || Math.floor(Math.random() * 200) + 50,
-    significance: manuscript.significance || "This manuscript is considered one of the foundational texts in Jain philosophy, offering insights into the principles of non-violence, truth, and spiritual liberation.",
-    fullText: "Available to researchers only",
-    annotations: Math.floor(Math.random() * 25) + 5,
-    downloadable: canAccessFull,
+  
+  const isResearcher = user?.role === 'researcher' || user?.role === 'admin';
+  const canAccessFull = isAuthenticated && isResearcher && manuscript.uploadType === 'detailed';
+  
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev === 0 ? manuscript.files.length - 1 : prev - 1));
   };
+  
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === manuscript.files.length - 1 ? 0 : prev + 1));
+  };
+  
+  // Placeholder data for demonstration, as these fields are not in your backend model
+  const enhancedData = {
+    summary: manuscript.description || `The ${manuscript.title} is a significant work, containing profound teachings on philosophy and spiritual practices.`,
+    significance: "This manuscript is a foundational text, offering insights into ancient principles and wisdom.",
+  };
+  
+  const thumbnail = manuscript.files[0] ? `http://localhost:4000${manuscript.files[0]}` : '';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -75,38 +70,60 @@ const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
             {manuscript.title}
           </DialogTitle>
           <DialogDescription className="text-base">
-            Explore this sacred manuscript from the Jain tradition
+            Explore this manuscript from the {manuscript.language || 'ancient'} tradition
           </DialogDescription>
+          
+          {/* ✅ CORRECTED: Moved the badges outside of DialogDescription */}
+          <div className="flex items-center mt-2 space-x-2">
+            <Badge variant="secondary">{manuscript.category || 'Uncategorized'}</Badge>
+            {manuscript.language && <Badge variant="outline">{manuscript.language}</Badge>}
+          </div>
+
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
-          {/* Image Section */}
+          {/* Image Section with Carousel */}
           <div className="space-y-4">
             <div className="relative overflow-hidden rounded-lg">
               <img
-                src={manuscript.thumbnail}
-                alt={manuscript.title}
+                src={`http://localhost:4000${manuscript.files[currentIndex]}`}
+                alt={`Image ${currentIndex + 1} of ${manuscript.title}`}
                 className="w-full h-64 lg:h-80 object-cover"
               />
-              {!canAccessFull && (
+              {manuscript.uploadType === 'detailed' && !canAccessFull && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                   <div className="text-center text-white">
                     <Lock className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm font-medium">Full Resolution Available to Researchers</p>
+                    <p className="text-sm font-medium">Full Access Available to Researchers</p>
                   </div>
                 </div>
               )}
+              {manuscript.files.length > 1 && (
+                <>
+                  <Button variant="ghost" className="absolute left-0 top-1/2 -translate-y-1/2 p-2" onClick={handlePrev}>
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                  <Button variant="ghost" className="absolute right-0 top-1/2 -translate-y-1/2 p-2" onClick={handleNext}>
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
+                    {manuscript.files.map((_, idx) => (
+                      <span key={idx} className={`h-2 w-2 rounded-full ${idx === currentIndex ? 'bg-primary' : 'bg-muted-foreground'}`} />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Quick Stats */}
+            {/* Quick Stats (modified to use available data) */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-muted/30 p-3 rounded-lg text-center">
                 <Scroll className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-sm font-medium">{enhancedData.pages} Pages</p>
+                <p className="text-sm font-medium">{manuscript.files.length} Pages</p>
               </div>
               <div className="bg-muted/30 p-3 rounded-lg text-center">
-                <Eye className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <p className="text-sm font-medium">{enhancedData.annotations} Annotations</p>
+                <Globe className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <p className="text-sm font-medium">{manuscript.language || "Unknown"} </p>
               </div>
             </div>
           </div>
@@ -118,23 +135,14 @@ const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  <strong>Author:</strong> {manuscript.author}
+                  <strong>Author:</strong> {manuscript.author || "N/A"}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  <strong>Period:</strong> {manuscript.date}
+                  <strong>Uploaded On:</strong> {new Date(manuscript.createdAt).toLocaleDateString()}
                 </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">
-                  <strong>Language:</strong> {manuscript.language}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary">{manuscript.category}</Badge>
               </div>
             </div>
 
@@ -152,7 +160,7 @@ const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
 
             {/* Historical Significance */}
             <div>
-              <h3 className="font-serif text-lg font-semibold mb-2">Historical Significance</h3>
+              <h3 className="font-serif text-lg font-semibold mb-2">Significance</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {enhancedData.significance}
               </p>
@@ -171,7 +179,7 @@ const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
                     {canAccessFull ? 'Full Access Available' : 'Limited Preview'}
                   </h4>
                   <p className="text-xs text-muted-foreground">
-                    {canAccessFull
+                    {canAccessFull 
                       ? 'You have full access to high-resolution images, annotations, and research tools.'
                       : 'Become a researcher to access high-resolution images, add annotations, and download manuscripts.'
                     }
@@ -187,7 +195,7 @@ const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
           {canAccessFull ? (
             <>
               <Button asChild variant="hero" className="flex-1">
-                <Link to={`/manuscript/${manuscript.id}`}>
+                <Link to={`/manuscript/${manuscript._id}`}>
                   <BookOpen className="h-4 w-4 mr-2" />
                   Open Full Manuscript
                 </Link>
@@ -199,10 +207,13 @@ const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
           ) : (
             <>
               {isAuthenticated ? (
-                // New: "Request Access" button for logged-in researchers
-                <RequestAccessButton manuscriptId={manuscript.id} />
+                <Button asChild variant="hero" className="flex-1">
+                  <Link to="/upgrade-to-researcher">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Become a Researcher
+                  </Link>
+                </Button>
               ) : (
-                // Existing: "Join as Researcher" for non-authenticated users
                 <>
                   <Button asChild variant="hero" className="flex-1">
                     <Link to="/signup">
@@ -223,6 +234,20 @@ const ManuscriptModal: React.FC<ManuscriptModalProps> = ({
             </>
           )}
         </div>
+
+        {/* Additional Info for Non-Researchers */}
+        {!canAccessFull && (
+          <div className="mt-4 p-4 bg-gradient-parchment rounded-lg">
+            <h4 className="font-serif font-semibold mb-2">Researcher Benefits</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Access to high-resolution manuscript images</li>
+              <li>• Add and view scholarly annotations</li>
+              <li>• Download manuscripts for research</li>
+              <li>• Contribute to the preservation effort</li>
+              <li>• Connect with global research community</li>
+            </ul>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

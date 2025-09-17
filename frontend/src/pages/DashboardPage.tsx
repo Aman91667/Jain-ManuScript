@@ -4,8 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { User, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+// ✅ Import all necessary dashboard components
 import ResearcherDashboard from './ResearcherDashboard';
 import PendingApproval from './PendingApproval';
+import AdminDashboard from './AdminDashboard'; // Assuming you have this component
+import UpgradeToResearcherPage from './UpgradeToResearcher'; // The page with the application form
 
 const DashboardPage: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -17,63 +21,44 @@ const DashboardPage: React.FC = () => {
       </div>
     );
   }
+
+  // ✅ 1. RENDER ADMIN DASHBOARD
+  // This should be the highest priority check
+  if (user?.role === 'admin') {
+    return <AdminDashboard />;
+  }
+
+  // ✅ 2. RENDER PENDING APPROVAL FOR RESEARCHER APPLICATION
+  // This covers the case where a user has applied and is waiting for approval
+  // We'll use the 'isApproved' flag on the researcher role
+  if (user?.role === 'researcher' && !user.isApproved) {
+    return <PendingApproval />;
+  }
   
-  if (user?.role === 'researcher') {
+  // ✅ 3. RENDER RESEARCHER DASHBOARD FOR APPROVED RESEARCHERS
+  // The 'isApproved' flag should be true after admin approval
+  if (user?.role === 'researcher' && user.isApproved) {
     return <ResearcherDashboard />;
   }
 
-  if (user?.role === 'user' && !user.isApproved) {
-    return <PendingApproval />;
+  // ✅ 4. RENDER APPLICATION PAGE FOR USERS WHO WANT TO UPGRADE
+  // This is the correct page for a user who has not applied yet.
+  if (user?.role === 'user') {
+    return <UpgradeToResearcherPage />;
   }
 
-  // Default dashboard for a standard user
+  // Fallback for any other state (e.g., if a user is not logged in)
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
-            User Dashboard
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Welcome, {user?.name}. Your journey begins here.
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-muted/50">
+        <div className="text-center">
+            <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">Welcome</h1>
+            <p className="text-lg text-muted-foreground mb-4">
+                Please log in to continue.
+            </p>
+            <Button asChild>
+                <Link to="/login">Log In</Link>
+            </Button>
         </div>
-        
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="font-serif text-xl">Browse & Discover</CardTitle>
-            <CardDescription>
-              Explore our public collection of Jain manuscripts.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="hero">
-              <Link to="/browse">
-                <BookOpen className="mr-2 h-4 w-4" />
-                Browse Manuscripts
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-xl">Become a Researcher</CardTitle>
-            <CardDescription>
-              Apply for full access to our research tools and manuscript collections.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline">
-              <Link to="/apply-researcher">
-                <User className="mr-2 h-4 w-4" />
-                Apply for Researcher Status
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-      </div>
     </div>
   );
 };

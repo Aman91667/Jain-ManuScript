@@ -1,150 +1,169 @@
+// src/services/authService.ts
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-const authAPI = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-authAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-authAPI.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'researcher' | 'admin';
+  isApproved: boolean;
 }
 
-export interface SignupResearcherCredentials {
-  name: string;
-  email: string;
-  password: string;
-  phoneNumber: string;
-  researchDescription: string;
-  idProofFile: File | null;
+export interface LoginCredentials {
+  email: string;
+  password: string;
 }
 
 export interface SignupNormalCredentials {
-  name: string;
-  email: string;
-  password: string;
+  name: string;
+  email: string;
+  password: string;
 }
 
-export interface UpgradeCredentials {
-  phoneNumber: string;
-  researchDescription: string;
-  idProofFile: File | null;
+export interface SignupResearcherCredentials {
+  name: string;
+  email: string;
+  password: string;
+  phoneNumber: string;
+  researchDescription: string;
+  idProofFile: File;
 }
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'user' | 'researcher' | 'admin';
-  isApproved: boolean;
-  approvedManuscripts: string[];
-  createdAt: string;
+export interface ApplyForResearcherCredentials {
+  phoneNumber: string;
+  researchDescription: string;
+  idProofFile: File;
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
-  message: string;
+  user: User;
+  token: string;
 }
 
-class AuthService {
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    try {
-      const response = await authAPI.post('/auth/login', credentials);
-      return response.data;
-    } catch (error: any) {
-      // ✅ FIX: More robust error handling
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed. Please check your credentials.';
-      throw new Error(errorMessage);
-    }
-  }
+const api = axios.create({
+  baseURL: `${API_URL}/api/auth`,
+});
 
-  async signupNormal(credentials: SignupNormalCredentials): Promise<AuthResponse> {
-    try {
-      const response = await authAPI.post('/auth/signup/user', credentials);
-      return response.data;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Standard signup failed.';
-      throw new Error(errorMessage);
-    }
-  }
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-  async signupResearcher(credentials: SignupResearcherCredentials): Promise<AuthResponse> {
-    try {
-      const formData = new FormData();
-      formData.append('name', credentials.name);
-      formData.append('email', credentials.email);
-      formData.append('password', credentials.password);
-      formData.append('phoneNumber', credentials.phoneNumber);
-      formData.append('researchDescription', credentials.researchDescription);
-      if (credentials.idProofFile) {
-        formData.append('idProofFile', credentials.idProofFile);
-      }
+const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  try {
+    const response = await api.post('/login', credentials);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Login failed');
+  }
+};
 
-      const response = await authAPI.post('/auth/signup/researcher', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Researcher application failed.';
-      throw new Error(errorMessage);
-    }
-  }
+const signupNormal = async (credentials: SignupNormalCredentials): Promise<AuthResponse> => {
+  try {
+    const response = await api.post('/signup/user', credentials);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Signup failed');
+  }
+};
 
-  async applyForResearcherStatus(credentials: UpgradeCredentials): Promise<AuthResponse> {
-    try {
-      const formData = new FormData();
-      formData.append('phoneNumber', credentials.phoneNumber);
-      formData.append('researchDescription', credentials.researchDescription);
-      if (credentials.idProofFile) {
-        formData.append('idProofFile', credentials.idProofFile);
-      }
+const signupResearcher = async (credentials: SignupResearcherCredentials): Promise<AuthResponse> => {
+  try {
+    const formData = new FormData();
+    formData.append('name', credentials.name);
+    formData.append('email', credentials.email);
+    formData.append('password', credentials.password);
+    formData.append('phoneNumber', credentials.phoneNumber);
+    formData.append('researchDescription', credentials.researchDescription);
+    formData.append('idProofFile', credentials.idProofFile);
 
-      const response = await authAPI.post('/users/apply-researcher', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit application.';
-      throw new Error(errorMessage);
-    }
-  }
+    const response = await api.post('/signup/researcher', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Researcher signup failed');
+  }
+};
 
-  async logout(): Promise<void> {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
-  }
+const applyForResearcherStatus = async (credentials: ApplyForResearcherCredentials) => {
+  try {
+    const formData = new FormData();
+    formData.append('phoneNumber', credentials.phoneNumber);
+    formData.append('researchDescription', credentials.researchDescription);
+    formData.append('idProofFile', credentials.idProofFile);
 
-  async getCurrentUser(): Promise<User> {
-    try {
-      const response = await authAPI.get('/auth/me');
-      return response.data;
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to get current user';
-      throw new Error(errorMessage);
-    }
-  }
-}
+    const response = await api.post('/apply-for-researcher', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Application failed');
+  }
+};
 
-export const authService = new AuthService();
+const getCurrentUser = async (): Promise<User> => {
+  try {
+    const response = await api.get('/me');
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to get current user');
+  }
+};
+
+const logout = (): void => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userData');
+  delete axios.defaults.headers.common['Authorization'];
+};
+
+// ✅ NEW: Functions for Admin Dashboard
+const fetchPendingApplications = async () => {
+  try {
+    const response = await api.get('/admin/researcher-applications');
+    return response.data.applications;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch pending applications.');
+  }
+};
+
+const approveResearcher = async (researcherId: string) => {
+  try {
+    const response = await api.patch(`/admin/approve/${researcherId}`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to approve researcher.');
+  }
+};
+
+const rejectResearcher = async (researcherId: string) => {
+  try {
+    const response = await api.patch(`/admin/reject/${researcherId}`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to reject researcher.');
+  }
+};
+
+
+export const authService = {
+  login,
+  signupNormal,
+  signupResearcher,
+  applyForResearcherStatus,
+  getCurrentUser,
+  logout,
+  fetchPendingApplications, // ✅ Added to export
+  approveResearcher, // ✅ Added to export
+  rejectResearcher, // ✅ Added to export
+};

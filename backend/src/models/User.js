@@ -1,41 +1,21 @@
-// backend/models/User.js
+// User.js - Defines the schema for a user in the application.
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    password: {
-        type: String,
-        required: true
-    },
-    role: {
-        type: String,
-        required: true,
-        enum: ['user', 'researcher', 'admin'],
-        default: 'user'
-    },
-    isApproved: {
-        type: Boolean,
-        default: false
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ['user', 'researcher', 'admin'], default: 'user' },
+    isApproved: { type: Boolean, default: false },
+    // ✅ NEW FIELDS FOR RESEARCHER APPLICATION
+    phoneNumber: { type: String },
+    researchDescription: { type: String },
+    idProofUrl: { type: String },
+}, { timestamps: true }); // Mongoose will automatically add createdAt and updatedAt fields
 
-// Middleware to hash password before saving a user document
 userSchema.pre('save', async function(next) {
-    // Only hash the password if it has been modified (or is new)
     if (!this.isModified('password')) {
         return next();
     }
@@ -44,5 +24,4 @@ userSchema.pre('save', async function(next) {
     next();
 });
 
-const User = mongoose.model('User', userSchema);
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);

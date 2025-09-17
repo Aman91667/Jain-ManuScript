@@ -1,45 +1,113 @@
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// frontend/src/pages/AdminDashboard.tsx
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, X, Upload, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Check, X, Upload, File } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { authService } from '@/services/authService';
+
+interface Researcher {
+  _id: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  phoneNumber: string;
+  researchDescription: string;
+  idProofUrl: string;
+}
 
 const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
-  
-  // Mock data for pending researcher applications
-  const pendingResearchers = [
-    { id: 'app1', name: 'Dr. Jane Smith', email: 'jane@example.com', description: 'Interested in early Jain philosophical texts.', date: '2 days ago' },
-    { id: 'app2', name: 'Dr. Alex Chen', email: 'alex@example.com', description: 'Working on Jain art and iconography.', date: '1 day ago' },
-  ];
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [pendingResearchers, setPendingResearchers] = useState<Researcher[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleApprove = (id: string) => {
-    console.log(`Approving researcher with ID: ${id}`);
-    // This would be an API call to the backend
+  const fetchPending = async () => {
+    setIsLoading(true);
+    try {
+      const applications = await authService.fetchPendingApplications();
+      setPendingResearchers(applications);
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+      setPendingResearchers([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleReject = (id: string) => {
-    console.log(`Rejecting researcher with ID: ${id}`);
-    // This would be an API call to the backend
+  useEffect(() => {
+    fetchPending();
+  }, []);
+
+  const handleApprove = async (researcherId: string) => {
+    try {
+      await authService.approveResearcher(researcherId);
+      toast({
+        title: 'Success!',
+        description: 'Researcher has been approved.',
+      });
+      fetchPending();
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
   };
+
+  const handleReject = async (researcherId: string) => {
+    try {
+      await authService.rejectResearcher(researcherId);
+      toast({
+        title: 'Rejected!',
+        description: 'Researcher application has been rejected.',
+      });
+      fetchPending();
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (isLoading && pendingResearchers.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
-            Admin Panel
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Welcome, {user?.name}. Manage the platform's content and users.
-          </p>
+          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">Admin Panel</h1>
+          <p className="text-muted-foreground text-lg">Manage platform content and users.</p>
         </div>
 
-        {/* Pending Researcher Applications */}
         <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row justify-between items-center">
             <div>
               <CardTitle className="font-serif text-xl">Pending Researcher Applications</CardTitle>
               <CardDescription>Review and approve new research applicants.</CardDescription>
@@ -52,22 +120,51 @@ const AdminDashboard: React.FC = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead>ID Proof</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingResearchers.map((app) => (
-                    <TableRow key={app.id}>
-                      <TableCell>{app.name}</TableCell>
-                      <TableCell>{app.email}</TableCell>
-                      <TableCell>{app.description}</TableCell>
+                  {pendingResearchers.map((r) => (
+                    <TableRow key={r._id}>
+                      <TableCell>{r.userId.name}</TableCell>
+                      <TableCell>{r.phoneNumber}</TableCell>
+                      <TableCell>
+                        <div className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
+                          {r.researchDescription}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <File className="h-4 w-4 mr-2" /> View File
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>ID Proof</DialogTitle>
+                              <DialogDescription>
+                                View the uploaded ID proof for the researcher.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              {r.idProofUrl ? (
+                                <img src={`http://localhost:4000${r.idProofUrl}`} alt="ID Proof" className="max-w-full h-auto" />
+                              ) : (
+                                <p>No ID Proof uploaded.</p>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleApprove(app.id)} className="text-green-600 hover:text-green-800">
+                        <Button variant="ghost" size="sm" onClick={() => handleApprove(r._id)} className="text-green-600 hover:text-green-800">
                           <Check className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleReject(app.id)} className="text-red-600 hover:text-red-800">
+                        <Button variant="ghost" size="sm" onClick={() => handleReject(r._id)} className="text-red-600 hover:text-red-800">
                           <X className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -80,15 +177,14 @@ const AdminDashboard: React.FC = () => {
             )}
           </CardContent>
         </Card>
-        
-        {/* New Content Upload Section */}
+
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex justify-between items-center">
             <div>
               <CardTitle className="font-serif text-xl">Upload New Manuscripts</CardTitle>
               <CardDescription>Add new manuscripts to the collection.</CardDescription>
             </div>
-            <Button>
+            <Button onClick={() => navigate("/admin/upload-manuscript")}>
               <Upload className="h-4 w-4 mr-2" />
               Upload Manuscript
             </Button>

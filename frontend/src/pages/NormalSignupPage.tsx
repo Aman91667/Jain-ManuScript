@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
-import ahimsaHand from '@/assets/ahimsa-hand.png';
+import ahimsaHand from '../assets/ahimsa-hand.png';
+
 
 const NormalSignupPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -19,7 +20,7 @@ const NormalSignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -48,12 +49,12 @@ const NormalSignupPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
     setIsLoading(true);
     try {
       const { name, email, password } = formData;
-      await signup({ name, email, password });
-      
-      // ✅ Updated toast message
+      await signup({ name, email, password }); // ✅ Calls AuthContext signup
+
       toast({
         title: "Welcome!",
         description: "JayJinandra! Your account has been created successfully.",
@@ -81,10 +82,9 @@ const NormalSignupPage: React.FC = () => {
               Jain Manuscripts
             </span>
           </div>
-          <p className="text-muted-foreground">
-            Create a standard user account
-          </p>
+          <p className="text-muted-foreground">Create a standard user account</p>
         </div>
+
         <Card className="shadow-medium">
           <CardHeader>
             <CardTitle className="font-serif text-2xl text-left">Create Account</CardTitle>
@@ -104,9 +104,9 @@ const NormalSignupPage: React.FC = () => {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  autoComplete="name"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -117,9 +117,9 @@ const NormalSignupPage: React.FC = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  autoComplete="email"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -131,7 +131,6 @@ const NormalSignupPage: React.FC = () => {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    autoComplete="new-password"
                     className="pr-10"
                   />
                   <Button
@@ -145,6 +144,7 @@ const NormalSignupPage: React.FC = () => {
                   </Button>
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <div className="relative">
@@ -156,7 +156,6 @@ const NormalSignupPage: React.FC = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    autoComplete="new-password"
                     className="pr-10"
                   />
                   <Button
@@ -170,24 +169,16 @@ const NormalSignupPage: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <Button type="submit" variant="hero" size="lg" className="w-full mt-4" disabled={isLoading}>
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing Up...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign Up
-                  </div>
-                )}
+
+              <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Signing Up...' : 'Sign Up'}
               </Button>
             </form>
+
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:text-primary/80 link-hover font-medium">
+                <Link to="/login" className="text-primary font-medium">
                   Sign in here
                 </Link>
               </p>
@@ -200,3 +191,4 @@ const NormalSignupPage: React.FC = () => {
 };
 
 export default NormalSignupPage;
+  

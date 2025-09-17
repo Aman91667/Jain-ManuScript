@@ -7,16 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import ManuscriptCard from '@/components/manuscript/ManuscriptCard';
 import ManuscriptModal from '@/components/manuscript/ManuscriptModal';
 import { Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { manuscriptService } from '@/services/manuscriptService';
 
 interface Manuscript {
-  id: string;
+  _id: string;
   title: string;
-  author: string;
+  author?: string;
   category: string;
-  date: string;
+  createdAt: string;
   description: string;
-  thumbnail: string;
-  language: string;
+  thumbnail?: string;
+  files: string[];
+  language?: string;
+  uploadType: 'normal' | 'detailed';
+  isApproved: boolean;
 }
 
 const BrowsePage: React.FC = () => {
@@ -25,93 +29,50 @@ const BrowsePage: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('all');
   const [manuscripts, setManuscripts] = useState<Manuscript[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedManuscript, setSelectedManuscript] = useState<Manuscript | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Mock data - replace with actual API calls
-  const mockManuscripts: Manuscript[] = [
-    {
-      id: '1',
-      title: 'Kalpa Sutra',
-      author: 'Acharya Bhadrabahu',
-      category: 'Philosophy',
-      date: '4th Century BCE',
-      description: 'The Kalpa Sutra is a Jain text containing the biographies of the Jain Tirthankaras, most notably Parshva and Mahavira.',
-      thumbnail: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400',
-      language: 'Sanskrit'
-    },
-    {
-      id: '2',
-      title: 'Acharanga Sutra',
-      author: 'Lord Mahavira',
-      category: 'Scripture',
-      date: '6th Century BCE',
-      description: 'The first agama of the 12 main agamas, containing the fundamental teachings of Lord Mahavira.',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400',
-      language: 'Prakrit'
-    },
-    {
-      id: '3',
-      title: 'Tattvartha Sutra',
-      author: 'Umaswami',
-      category: 'Philosophy',
-      date: '2nd Century CE',
-      description: 'A foundational text that systematically presents the essential principles of Jainism.',
-      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-      language: 'Sanskrit'
-    },
-    {
-      id: '4',
-      title: 'Bhagavati Sutra',
-      author: 'Various Acharyas',
-      category: 'Scripture',
-      date: '3rd Century BCE',
-      description: 'The largest and most important of the twelve Jain agamas, containing teachings on various aspects of Jain doctrine.',
-      thumbnail: 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=400',
-      language: 'Prakrit'
-    },
-    {
-      id: '5',
-      title: 'Uttaradhyayana Sutra',
-      author: 'Multiple Authors',
-      category: 'Ethics',
-      date: '4th Century BCE',
-      description: 'Collection of teachings covering ethics, conduct, and spiritual practices.',
-      thumbnail: 'https://images.unsplash.com/photo-1495344517868-8ebaf0a2044a?w=400',
-      language: 'Prakrit'
-    },
-    {
-      id: '6',
-      title: 'Samavayanga Sutra',
-      author: 'Ancient Acharyas',
-      category: 'Mathematics',
-      date: '2nd Century BCE',
-      description: 'A mathematical and philosophical text dealing with numerical categorizations.',
-      thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400',
-      language: 'Sanskrit'
-    }
-  ];
 
   const categories = ['all', 'Philosophy', 'Scripture', 'Ethics', 'Mathematics', 'Art', 'Literature'];
   const languages = ['all', 'Sanskrit', 'Prakrit', 'Hindi', 'Gujarati', 'Tamil'];
 
   useEffect(() => {
-    // Simulate API loading
-    setIsLoading(true);
-    setTimeout(() => {
-      setManuscripts(mockManuscripts);
-      setIsLoading(false);
-    }, 1000);
+    const fetchManuscripts = async () => {
+      setIsLoading(true);
+      try {
+        const data = await manuscriptService.getManuscripts();
+        console.log("Fetched manuscripts:", data);
+        setManuscripts(data);
+      } catch (err: any) {
+        console.error("Error fetching manuscripts:", err);
+        setError("Failed to fetch manuscripts. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchManuscripts();
   }, []);
 
   const filteredManuscripts = manuscripts.filter((manuscript) => {
-    const matchesSearch = manuscript.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         manuscript.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         manuscript.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategory === 'all' || manuscript.category === selectedCategory;
-    const matchesLanguage = selectedLanguage === 'all' || manuscript.language === selectedLanguage;
+    const title = manuscript.title?.toLowerCase() || '';
+    const author = manuscript.author?.toLowerCase() || '';
+    const description = manuscript.description?.toLowerCase() || '';
+    const category = manuscript.category?.toLowerCase() || '';
+    const language = manuscript.language?.toLowerCase() || '';
+
+    const search = searchQuery.toLowerCase();
+    const selectedCat = selectedCategory.toLowerCase();
+    const selectedLang = selectedLanguage.toLowerCase();
+
+    const matchesSearch =
+      title.includes(search) || author.includes(search) || description.includes(search);
+
+    const matchesCategory =
+      selectedCat === 'all' || !category || category === selectedCat;
+
+    const matchesLanguage =
+      selectedLang === 'all' || !language || language === selectedLang;
 
     return matchesSearch && matchesCategory && matchesLanguage;
   });
@@ -128,12 +89,23 @@ const BrowsePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="p-6 text-center">
+          <CardContent>
+            <p className="text-red-500 font-semibold">{error}</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -141,7 +113,6 @@ const BrowsePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="font-serif text-3xl md:text-4xl font-bold mb-4">
             Browse Manuscripts
@@ -151,13 +122,11 @@ const BrowsePage: React.FC = () => {
           </p>
         </div>
 
-        {/* Search and Filters */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center">
-                <Search className="h-5 w-5 mr-2" />
-                Search & Filter
+                <Search className="h-5 w-5 mr-2" /> Search & Filter
               </span>
               <Button
                 variant="outline"
@@ -171,7 +140,6 @@ const BrowsePage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -182,7 +150,6 @@ const BrowsePage: React.FC = () => {
               />
             </div>
 
-            {/* Filters */}
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${showFilters ? 'block' : 'hidden md:grid'}`}>
               <div>
                 <label className="text-sm font-medium mb-2 block">Category</label>
@@ -233,67 +200,19 @@ const BrowsePage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Results */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">
-              Showing {filteredManuscripts.length} of {manuscripts.length} manuscripts
-            </p>
-            {(selectedCategory !== 'all' || selectedLanguage !== 'all' || searchQuery) && (
-              <div className="flex items-center space-x-2">
-                {selectedCategory !== 'all' && (
-                  <Badge variant="secondary" className="flex items-center">
-                    {selectedCategory}
-                    <button
-                      onClick={() => setSelectedCategory('all')}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                )}
-                {selectedLanguage !== 'all' && (
-                  <Badge variant="secondary" className="flex items-center">
-                    {selectedLanguage}
-                    <button
-                      onClick={() => setSelectedLanguage('all')}
-                      className="ml-1 hover:text-destructive"
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Manuscripts Grid */}
         {filteredManuscripts.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
-              <div className="text-muted-foreground mb-4">
-                <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">No manuscripts found</h3>
-                <p>Try adjusting your search terms or filters</p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('all');
-                  setSelectedLanguage('all');
-                }}
-              >
-                Clear All Filters
-              </Button>
+              <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">No manuscripts found</h3>
+              <p>Try adjusting your search terms or filters</p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredManuscripts.map((manuscript) => (
               <ManuscriptCard 
-                key={manuscript.id} 
+                key={manuscript._id} 
                 manuscript={manuscript} 
                 onCardClick={handleCardClick}
               />
@@ -301,7 +220,6 @@ const BrowsePage: React.FC = () => {
           </div>
         )}
 
-        {/* Manuscript Modal */}
         <ManuscriptModal
           manuscript={selectedManuscript}
           isOpen={isModalOpen}

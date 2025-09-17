@@ -1,25 +1,29 @@
-// backend/src/models/Manuscript.js
 const mongoose = require('mongoose');
 
 const manuscriptSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  author: { type: String, required: true },
-  category: { type: String, required: true },
-  date: { type: String },
   description: { type: String },
-  summary: { type: String },
-  significance: { type: String },
-  thumbnail: { type: String }, 
-  images: [{ type: String }],
-  language: { type: String },
-  status: { type: String, enum: ['published', 'pending', 'draft'], default: 'published' },
-  isPublic: { type: Boolean, default: false }, // ✅ NEW: Differentiate between public and private
-  submittedBy: {
+  category: { type: String, trim: true },
+  language: { type: String, trim: true },
+  period: { type: String, trim: true },
+  author: { type: String, trim: true },
+  keywords: { type: [String] }, // Changed to an array of strings
+  files: { type: [String], required: true }, // Changed from fileUrl to files array
+  
+  // ===================== ADDED =====================
+  uploadType: {
+    type: String,
+    enum: ['normal', 'detailed'],
+    required: true,
+  },
+  uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
+  // =================================================
+
+}, {
+  timestamps: true,
 });
 
 module.exports = mongoose.model('Manuscript', manuscriptSchema);

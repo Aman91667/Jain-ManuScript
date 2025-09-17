@@ -1,121 +1,124 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService, LoginCredentials, SignupResearcherCredentials, SignupNormalCredentials} from '@/services/authService';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'user' | 'researcher' | 'admin';
-  isApproved: boolean;
-  approvedManuscripts: string[];
-}
-
-export interface SignupNormalCredentials {
-  name: string;
-  email: string;
-  password: string;
-}
+import axios from 'axios';
+import {
+  authService,
+  LoginCredentials,
+  SignupNormalCredentials,
+  SignupResearcherCredentials,
+  User,
+} from '@/services/authService';
 
 interface AuthContextType {
-  user: User | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
-  signup: (credentials: SignupResearcherCredentials | SignupNormalCredentials) => Promise<void>;
-  isAuthenticated: boolean;
-  isLoading: boolean;
+  user: User | null;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => void;
+  signup: (credentials: SignupNormalCredentials | SignupResearcherCredentials) => Promise<void>;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  userRole: 'user' | 'researcher' | 'admin' | 'unknown';
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
 };
 
 interface AuthProviderProps {
-  children: ReactNode;
+  children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('userData');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<'user' | 'researcher' | 'admin' | 'unknown'>(() => {
+    const saved = localStorage.getItem('userData');
+    return saved ? JSON.parse(saved).role : 'unknown';
+  });
 
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        try {
-          const fetchedUser = await authService.getCurrentUser();
-          setUser(fetchedUser);
-        } catch (error) {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('userData');
-          setUser(null);
-        }
-      }
-      setIsLoading(false);
-    };
-    checkAuthStatus();
-  }, []);
+  // --- Setup Axios Authorization Header & fetch current user ---
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
 
-  const login = async (credentials: LoginCredentials) => {
-    setIsLoading(true);
-    try {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
+    const fetchUser = async () => {
+      if (token) {
+        try {
+          const currentUser = await authService.getCurrentUser();
+          setUser(currentUser);
+          setUserRole(currentUser.role || 'unknown');
+          localStorage.setItem('userData', JSON.stringify(currentUser));
+        } catch (err) {
+          logout();
+        }
+      }
+      setIsLoading(false);
+    };
 
-      const { user: loggedInUser, token } = await authService.login(credentials);
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userData', JSON.stringify(loggedInUser));
-      setUser(loggedInUser);
-    } catch (error: any) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchUser();
+  }, []);
 
-  const signup = async (credentials: SignupResearcherCredentials | SignupNormalCredentials) => {
-    setIsLoading(true);
-    try {
-      const isResearcherSignup = 'idProofFile' in credentials;
-      const { user: newUser, token } = isResearcherSignup
-        ? await authService.signupResearcher(credentials as SignupResearcherCredentials)
-        : await authService.signupNormal(credentials as SignupNormalCredentials);
+  const login = async (credentials: LoginCredentials) => {
+    setIsLoading(true);
+    try {
+      const { user: loggedInUser, token } = await authService.login(credentials);
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userData', JSON.stringify(loggedInUser));
+      setUser(loggedInUser);
+      setUserRole(loggedInUser.role || 'unknown');
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
+  const signup = async (credentials: SignupNormalCredentials | SignupResearcherCredentials) => {
+    setIsLoading(true);
+    try {
+      const isResearcher = 'idProofFile' in credentials;
+      const { user: newUser, token } = isResearcher
+        ? await authService.signupResearcher(credentials as SignupResearcherCredentials)
+        : await authService.signupNormal(credentials as SignupNormalCredentials);
 
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userData', JSON.stringify(newUser));
-      setUser(newUser);
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userData', JSON.stringify(newUser));
+      setUser(newUser);
+      setUserRole(newUser.role || 'unknown');
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-  };
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+    setUserRole('unknown');
+    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+  };
 
-  const value = {
-    user,
-    login,
-    logout,
-    signup,
-    isAuthenticated: !!user,
-    isLoading
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        signup,
+        isAuthenticated: !!user,
+        isLoading,
+        userRole,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
