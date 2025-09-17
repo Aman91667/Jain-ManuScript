@@ -102,17 +102,36 @@ exports.login = async (req, res) => {
     }
 };
 
+// src/controllers/authController.js
+
+// ... other functions ...
+
+// ✅ UPDATE THIS FUNCTION
 exports.getCurrentUser = async (req, res) => {
-    try {
-        if (!req.user) {
-            return res.status(401).json({ message: "Unauthorized" });
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    
+    // ✅ NEW: Temporary empty array to resolve frontend error
+    const approvedManuscripts = [];
+
+    // Send the user data along with the new field
+    res.json({ 
+        user: {
+            ...user.toObject(),
+            approvedManuscripts
         }
-        const { _id, name, email, role, isApproved } = req.user;
-        res.json({ _id, name, email, role, isApproved });
-    } catch (err) {
-        console.error("[getCurrentUser] error", err);
-        res.status(500).json({ message: "Server error" });
-    }
+    });
+
+  } catch (err) {
+    console.error("[getCurrentUser] error", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 exports.applyForResearcherStatus = async (req, res) => {
