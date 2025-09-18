@@ -1,16 +1,9 @@
 const Manuscript = require("../models/Manuscript");
 const fs = require("fs");
 
-// ===========================================
-// ✅ NEW: GET public manuscripts without auth
-// ===========================================
 exports.getPublicManuscripts = async (req, res) => {
   try {
-    // Find manuscripts that are approved and have a 'normal' upload type
-    const manuscripts = await Manuscript.find({
-      uploadType: "normal",
-      isApproved: true,
-    }).sort({ createdAt: -1 });
+    const manuscripts = await Manuscript.find({ uploadType: "normal" }).sort({ createdAt: -1 });
     res.json(manuscripts);
   } catch (err) {
     console.error(err);
@@ -18,8 +11,6 @@ exports.getPublicManuscripts = async (req, res) => {
   }
 };
 
-
-// Public manuscript upload (user + admin)
 exports.uploadPublicManuscript = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "File is required" });
@@ -37,7 +28,6 @@ exports.uploadPublicManuscript = async (req, res) => {
       uploadType: "normal",
       files: [`/uploads/${req.file.filename}`],
       uploadedBy: req.user.id,
-      isApproved: true,
     });
 
     await manuscript.save();
@@ -48,7 +38,6 @@ exports.uploadPublicManuscript = async (req, res) => {
   }
 };
 
-// Detailed manuscript upload (researcher + admin)
 exports.uploadDetailedManuscript = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0)
@@ -73,7 +62,6 @@ exports.uploadDetailedManuscript = async (req, res) => {
       uploadType: "detailed",
       files: filePaths,
       uploadedBy: req.user.id,
-      isApproved: true,
     });
 
     await manuscript.save();
@@ -84,37 +72,24 @@ exports.uploadDetailedManuscript = async (req, res) => {
   }
 };
 
-// Get all manuscripts based on user role
-// ... (rest of the file remains the same)
-
-// Get all manuscripts based on user role
 exports.getAllManuscripts = async (req, res) => {
   try {
-    // ⚠️ Remove this temporary line!
-    // const manuscripts = await Manuscript.find().sort({ createdAt: -1 });
-    // return res.json(manuscripts);
-
-    // ✅ UNCOMMENT THIS CODE BLOCK to enable role-based access
     const userRole = req.user.role;
     const userId = req.user.id;
     let query = {};
 
     if (userRole === "user") {
-      // Users can only see public/normal manuscripts
       query = { uploadType: "normal" };
     } else if (userRole === "researcher") {
-      // Researchers can see approved detailed manuscripts OR their own uploaded normal/detailed ones
       query = {
         $or: [
-          { uploadType: "detailed", isApproved: true },
+          { uploadType: "detailed" },
           { uploadedBy: userId }
         ],
       };
     } else if (userRole === "admin") {
-      // Admins can see all manuscripts
       query = {};
     } else {
-      // Fallback for an unknown role
       return res.status(403).json({ message: "Forbidden: You do not have permission." });
     }
 
@@ -126,10 +101,6 @@ exports.getAllManuscripts = async (req, res) => {
   }
 };
 
-// ... (rest of the file remains the same)
-
-
-// ✅ Get manuscript by ID
 exports.getManuscriptById = async (req, res) => {
   try {
     const manuscript = await Manuscript.findById(req.params.id);
@@ -143,10 +114,9 @@ exports.getManuscriptById = async (req, res) => {
   }
 };
 
-// ✅ Get featured manuscripts (e.g. marked by admin)
 exports.getFeaturedManuscripts = async (req, res) => {
   try {
-    const manuscripts = await Manuscript.find({ isFeatured: true, isApproved: true })
+    const manuscripts = await Manuscript.find({ isFeatured: true })
       .sort({ createdAt: -1 })
       .limit(10);
     res.json(manuscripts);

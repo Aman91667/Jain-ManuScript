@@ -1,29 +1,55 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+// middlewares/authMiddleware.js
 
-module.exports = async function (req, res, next) {
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+// Middleware to protect routes by ensuring a valid token exists
+exports.protect = async (req, res, next) => {
   let token;
 
   if (
     req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
+    req.headers.authorization.startsWith('Bearer')
   ) {
     try {
-      token = req.headers.authorization.split(" ")[1];
+      token = req.headers.authorization.split(' ')[1];
 
-      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id).select('-password');
 
-      // Attach user to request
-      req.user = await User.findById(decoded.id).select("-password");
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authorized, user not found' });
+      }
 
       next();
     } catch (error) {
-      return res.status(401).json({ message: "Not authorized, token failed" });
+      console.error(error);
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
   }
 
   if (!token) {
-    return res.status(401).json({ message: "Not authorized, no token" });
+    return res.status(401).json({ message: 'Not authorized, no token' });
+  }
+};
+
+// Middleware to authorize users based on their role
+exports.authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        message: `User role ${req.user.role} is not authorized to access this route` 
+      });
+    }
+    next();
+  };
+};
+
+// Middleware to specifically check for admin role
+exports.adminMiddleware = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   }
 };

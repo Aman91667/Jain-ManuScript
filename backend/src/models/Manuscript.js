@@ -7,10 +7,8 @@ const manuscriptSchema = new mongoose.Schema({
   language: { type: String, trim: true },
   period: { type: String, trim: true },
   author: { type: String, trim: true },
-  keywords: { type: [String] }, // Changed to an array of strings
-  files: { type: [String], required: true }, // Changed from fileUrl to files array
-  
-  // ===================== ADDED =====================
+  keywords: { type: [String] },
+  files: { type: [String], required: true },
   uploadType: {
     type: String,
     enum: ['normal', 'detailed'],
@@ -20,8 +18,6 @@ const manuscriptSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
-  // =================================================
-
 }, {
   timestamps: true,
 });

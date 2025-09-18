@@ -1,4 +1,3 @@
-// routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -6,54 +5,34 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const fs = require('fs');
 
-// Import the auth and admin middlewares
-const authMiddleware = require('../middlewares/authMiddleware');
-const adminMiddleware = require('../middlewares/adminMiddleware');
-
-// Use a single import for the entire controller object
 const authController = require('../controllers/authController');
+const { protect, adminMiddleware } = require('../middlewares/authMiddleware');
 
-// --- Multer Configuration ---
+// --- Multer configuration ---
+const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '..', '..', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir);
-    }
-    cb(null, uploadDir);
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    cb(null, uuidv4() + '-' + file.originalname);
   },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = uuidv4();
-    cb(null, uniqueSuffix + '-' + file.originalname);
-  }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({ storage });
 
 // --- Public Routes ---
-router.post('/login', authController.login);
-router.post('/signup/user', authController.signupNormal);
-router.post('/signup/researcher', upload.single('idProofFile'), authController.signupResearcher);
-router.post(
-  '/apply-for-researcher',
-  authMiddleware,
-  upload.single('idProofFile'),
-  authController.applyForResearcherStatus
-);
+router.post('/login', authController.login); // ✅ pass function
+router.post('/signup/user', authController.signupNormal); // ✅ pass function
+router.post('/signup/researcher', upload.single('idProofFile'), authController.signupResearcher); // ✅ pass function
+router.post('/apply-for-researcher', protect, upload.single('idProofFile'), authController.applyForResearcherStatus); // ✅ pass function
 
 // --- User Routes ---
-router.get('/me', authMiddleware, authController.getCurrentUser);
+router.get('/me', protect, authController.getCurrentUser); // ✅ pass function
 
 // --- Admin Routes ---
-router.get(
-  '/admin/researcher-applications',
-  authMiddleware,
-  adminMiddleware,
-  authController.getPendingResearchers
-);
-
-// NEW ROUTES: To handle researcher approval and rejection
-router.patch('/admin/approve/:researcherId', authMiddleware, adminMiddleware, authController.approveResearcher);
-router.patch('/admin/reject/:researcherId', authMiddleware, adminMiddleware, authController.rejectResearcher);
-
+router.get('/admin/researcher-applications', protect, adminMiddleware, authController.getPendingResearchers); // ✅ pass function
+router.patch('/admin/approve/:researcherId', protect, adminMiddleware, authController.approveResearcher); // ✅ pass function
+router.patch('/admin/reject/:researcherId', protect, adminMiddleware, authController.rejectResearcher); // ✅ pass function
 
 module.exports = router;

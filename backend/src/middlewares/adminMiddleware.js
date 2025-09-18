@@ -1,21 +1,13 @@
-// src/middleware/adminMiddleware.js
-const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Adjust the path as needed
+// middlewares/adminMiddleware.js
+// This middleware ensures the user has an 'admin' role before proceeding.
 
-const adminMiddleware = async (req, res, next) => {
-    // 1. The general auth middleware should have already been run.
-    //    It should have verified the token and attached the user to the request.
-    if (!req.user) {
-        return res.status(401).json({ message: 'Authentication required.' });
+module.exports = (req, res, next) => {
+    // Check if the user object was attached by the authentication middleware
+    if (req.user && req.user.role === 'admin') {
+        // If the user is an admin, proceed to the next handler
+        next();
+    } else {
+        // If not an admin, send a 403 Forbidden response
+        res.status(403).json({ message: 'Access denied. Admin privileges required.' });
     }
-
-    // 2. Check if the authenticated user has the 'admin' role.
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Access denied. Administrator privileges required.' });
-    }
-
-    // 3. If the user is an admin, proceed to the next middleware or route handler.
-    next();
 };
-
-module.exports = adminMiddleware;
