@@ -1,16 +1,18 @@
-export interface Manuscript {
+interface Manuscript {
   _id: string;
   title: string;
-  author?: string;
-  category: string;
-  createdAt: string;
   description: string;
+  category: string;
+  language: string;
+  period: string;
+  author: string;
+  keywords: string[];
   files: string[];
-  language?: string;
-  uploadType: "normal" | "detailed";
-  isApproved?: boolean;
-  uploadedBy?: string;
-  keywords?: string[];
-  isFeatured?: boolean;
+  uploadType: 'normal' | 'detailed';
+  uploadedBy: string;
+
+  // Optional fields used in detail page
+  status?: string;
+  submittedBy?: string;
+  images?: string[]; // for carousel
 }
-     

@@ -1,123 +1,163 @@
-// frontend/src/pages/ResearcherDashboard.tsx
-
-import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Book, FileText, User, Mail, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import HelpForm from '@/components/common/HelpForm';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useAuth } from '../contexts/AuthContext';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Book, User, Mail, FileText, Search, TrendingUp, CircleCheck, Clock } from 'lucide-react';
+import HelpForm from '../components/common/HelpForm';
+import { Separator } from '../components/ui/separator';
 
 const ResearcherDashboard: React.FC = () => {
-  const { user } = useAuth();
-  
-  const approvedManuscripts = user?.approvedManuscripts || [
-    { id: '60c72b2f9b1d8c001f8e4e9a', title: 'Kalpa Sutra', access: 'full' },
-    { id: '60c72b2f9b1d8c001f8e4e9b', title: 'Tattvartha Sutra', access: 'full' }
-  ];
+  const navigate = useNavigate();
+  // State to control if the "Browse" button is disabled
+  const [isBrowseLoading, setIsBrowseLoading] = useState(false);
+
+  const { user } = useAuth() || {
+    user: {
+      name: 'Dr. Evelyn Reed',
+      role: 'principal researcher',
+      approvedManuscripts: [{ id: 1 }, { id: 2 }],
+      pendingSubmissions: [{ id: 3 }],
+      recentHighlights: [
+        'Collaborated on the "AI in Medicine" project.',
+        'Published "Nanotechnology in Materials Science" in Nature.',
+        'Received grant approval for the "Future of Quantum Computing" study.'
+      ]
+    }
+  };
+
+  // Function to handle the navigation
+  const handleBrowseClick = () => {
+    setIsBrowseLoading(true);
+    // Simulate a brief loading period before navigating
+    setTimeout(() => {
+      navigate('/browse');
+      setIsBrowseLoading(false);
+    }, 500); // 500ms delay to simulate loading
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">
-            Researcher Dashboard
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container mx-auto px-4 py-12">
+        {/* Header with Centered Welcome Message */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
+           Jai Jinandra, <span className="text-primary">{user?.name}</span>
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Welcome, {user?.name}. Your research journey awaits.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+           आपके सहयोग के लिए धन्यवाद्
           </p>
         </div>
+        <Separator className="mb-8" />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Approved Access</CardTitle>
-              <Book className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{approvedManuscripts.length} Manuscripts</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                You have full study access to these documents.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+        {/* Core Metrics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Card 1: Your Role */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Your Role</CardTitle>
-              <User className="h-4 w-4 text-muted-foreground" />
+              <User className="h-5 w-5 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold capitalize">{user?.role}</div>
+              <div className="text-3xl font-bold capitalize">{user?.role || 'Researcher'}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                You can add annotations and submit new manuscripts.
+                Full permissions for annotations, submissions, and collaborative research.
               </p>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending Submissions</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+
+          {/* Card 2: Research Access */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Research Access</CardTitle>
+              <CircleCheck className="h-5 w-5 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2</div>
+              <div className="text-3xl font-bold">Active</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Manuscripts awaiting administrator review.
+                You have full access to approved manuscripts and research materials.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Card 3: Approved Manuscripts */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Approved Manuscripts</CardTitle>
+              <Book className="h-5 w-5 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">
+                {user?.approvedManuscripts?.length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Documents available for study
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Approved Manuscripts Section */}
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-serif text-xl">My Approved Manuscripts</CardTitle>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/request-access">
-                <Plus className="h-4 w-4 mr-2" />
-                Request New Access
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {approvedManuscripts.length > 0 ? (
-              <ul className="space-y-2">
-                {approvedManuscripts.map((manuscript) => (
-                  <li key={manuscript.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors">
-                    <span className="text-sm font-medium">{manuscript.title}</span>
-                    <Badge>{manuscript.access}</Badge>
-                    <Button asChild variant="outline" size="sm">
-                      <Link to={`/manuscript/${manuscript.id}`}>
-                        View <Book className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground">
-                You currently have no approved manuscripts.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        {/* Quick Actions & Research Highlights Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Quick Actions Card */}
+          <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>
+                Jump right into your workflow with these shortcuts.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={handleBrowseClick}
+                disabled={isBrowseLoading} // Disable the button while loading
+              >
+                {isBrowseLoading ? (
+                  <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <Search className="mr-2 h-4 w-4" />
+                )}
+                Browse All Manuscripts
+              </Button>
+              <HelpForm
+                trigger={
+                  <Button variant="outline" className="w-full justify-start">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Contact Support
+                  </Button>
+                }
+              />
+            </CardContent>
+          </Card>
 
-        {/* Help Form Button */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-serif text-xl">Need Assistance?</CardTitle>
-            <HelpForm 
-              trigger={
-                <Button variant="outline">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Contact Admin
-                </Button>
-              }
-            />
-          </CardHeader>
-        </Card>
+          {/* Research Highlights Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Research Highlights</CardTitle>
+              <CardDescription>
+                Notable achievements and milestones in your research.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc list-inside space-y-2">
+                {user?.recentHighlights?.length > 0 ? (
+                  user.recentHighlights.map((highlight, index) => (
+                    <li key={index} className="text-sm text-foreground">
+                      {highlight}
+                    </li>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No recent highlights to display.</p>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

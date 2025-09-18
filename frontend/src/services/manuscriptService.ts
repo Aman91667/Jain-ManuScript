@@ -1,3 +1,4 @@
+// frontend/src/services/manuscriptService.ts
 import axios from "axios";
 import { Manuscript } from "@/types";
 
@@ -35,6 +36,15 @@ export const manuscriptService = {
     } catch (error: any) {
       throw new Error(error?.response?.data?.message || error.message || "Failed to fetch manuscripts");
     }
+  },
+
+  // ✅ Add this method
+  getManuscriptById: async (id: string): Promise<Manuscript> => {
+    try {
+      const res = await manuscriptAPI.get<Manuscript>(`/${id}`);
+      return res.data;
+    } catch (error: any) {
+      throw new Error(error?.response?.data?.message || error.message || "Failed to fetch manuscript");
+    }
   }
 };
-
