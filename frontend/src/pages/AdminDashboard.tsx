@@ -1,4 +1,3 @@
-// frontend/src/pages/AdminDashboard.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,7 +18,7 @@ import { authService } from '@/services/authService';
 
 interface Researcher {
   _id: string;
-  userId: {
+  userId?: { // Make userId optional as it might be undefined
     _id: string;
     name: string;
     email: string;
@@ -129,7 +128,7 @@ const AdminDashboard: React.FC = () => {
                 <TableBody>
                   {pendingResearchers.map((r) => (
                     <TableRow key={r._id}>
-                      <TableCell>{r.userId.name}</TableCell>
+                      <TableCell>{r.userId?.name}</TableCell>
                       <TableCell>{r.phoneNumber}</TableCell>
                       <TableCell>
                         <div className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">

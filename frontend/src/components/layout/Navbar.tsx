@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, Menu, User } from 'lucide-react';
 import ahimsaHand from '@/assets/ahimsa-hand.png';
-import ThemeToggle from '@/components/common/ThemeToggle'; // NEW IMPORT
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 const Navbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -12,13 +12,14 @@ const Navbar: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // ✅ CORRECTED: Change label to "Admin Dashboard" if the user is an admin
   const navLinks = [
     { path: '/', label: 'Home' },
     { path: '/browse', label: 'Browse Manuscripts' },
-    ...(isAuthenticated ? [
-      { path: '/dashboard', label: 'Dashboard' },
-      ...(user?.role === 'admin' ? [{ path: '/admin', label: 'Admin' }] : [])
-    ] : [])
+    ...(isAuthenticated 
+      ? [{ path: '/dashboard', label: user?.role === 'admin' ? 'Admin Dashboard' : 'Dashboard' }] 
+      : []
+    ),
   ];
 
   return (
