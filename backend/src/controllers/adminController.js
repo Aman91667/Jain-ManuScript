@@ -26,17 +26,20 @@ exports.getAllAccessRequests = async (req, res) => {
 /**
  * Get all users awaiting researcher approval (Admin view)
  */
+/**
+ * Get all users awaiting researcher approval (Admin view)
+ */
 exports.getResearcherRequests = async (req, res) => {
-    try {
-        // Correctly queries the User model for unapproved researchers
-        const requests = await User.find({ role: 'researcher', isApproved: false }).select('-password');
-        res.status(200).json(requests);
-    } catch (error) {
-        // The detailed error is typically logged here, which causes the 500 error on the frontend
-        console.error("Error in getResearcherRequests:", error); 
-        res.status(500).json({ message: 'Server error fetching researcher requests' });
-    }
+  try {
+    // Only fetch researchers whose status is 'pending'
+    const requests = await User.find({ role: 'researcher', status: 'pending' }).select('-password');
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error("Error in getResearcherRequests:", error);
+    res.status(500).json({ message: 'Server error fetching researcher requests' });
+  }
 };
+
 
 /**
  * Approve or reject researcher (Updates User status and Researcher application record)
@@ -68,4 +71,33 @@ exports.approveResearcher = async (req, res) => {
         console.error(error);
         res.status(500).json({ message: 'Server error updating researcher status' });
     }
+};
+// adminController.js
+exports.rejectResearcher = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.role !== 'researcher')
+      return res.status(400).json({ message: 'User is not a researcher' });
+
+    // Update status to rejected
+    user.isApproved = false;
+    user.status = 'rejected';
+    await user.save();
+
+    // Update Researcher record if exists
+    const researcher = await Researcher.findOne({ userId });
+    if (researcher) {
+      researcher.isApproved = false;
+      await researcher.save();
+    }
+
+    res.status(200).json({ message: 'Researcher application rejected.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error rejecting researcher' });
+  }
 };

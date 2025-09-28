@@ -1,23 +1,34 @@
-// adminRoutes.js (This code is correct)
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middlewares/authMiddleware'); 
 const adminController = require('../controllers/adminController');
 
-// ...
+// ===============================
+// Admin-only routes
+// ===============================
 
-// Only logged-in Admins can access researcher requests
-router.get('/researcher/requests', 
-    protect, 
-    authorize('admin'), 
-    adminController.getResearcherRequests
+// Get all pending researcher requests
+router.get(
+  '/researcher/requests', 
+  protect, 
+  authorize('admin'), 
+  adminController.getResearcherRequests
 );
 
-// Only logged-in Admins can approve/reject researchers
-router.put('/researcher/approve/:userId', 
-    protect, 
-    authorize('admin'), 
-    adminController.approveResearcher
+// Approve researcher
+router.put(
+  '/researcher/approve/:userId', 
+  protect, 
+  authorize('admin'), 
+  adminController.approveResearcher
+);
+
+// Reject researcher
+router.put(
+  '/researcher/reject/:userId', 
+  protect, 
+  authorize('admin'), 
+  adminController.rejectResearcher
 );
 
 module.exports = router;

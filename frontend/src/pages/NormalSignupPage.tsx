@@ -4,12 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox'; // Added Checkbox import
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import ahimsaHand from '../assets/ahimsa-hand.png';
-
 
 const NormalSignupPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +19,7 @@ const NormalSignupPage: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false); // New state for terms
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const { signup } = useAuth();
@@ -45,7 +44,6 @@ const NormalSignupPage: React.FC = () => {
       toast({ title: "Weak Password", description: "Password must be at least 6 characters long.", variant: "destructive" });
       return false;
     }
-    // New validation for terms
     if (!agreeToTerms) {
       toast({ title: "Terms Required", description: "Please agree to the terms and conditions.", variant: "destructive" });
       return false;
@@ -60,7 +58,7 @@ const NormalSignupPage: React.FC = () => {
     setIsLoading(true);
     try {
       const { name, email, password } = formData;
-      await signup({ name, email, password }); 
+      await signup({ name, email, password });
 
       toast({
         title: "Welcome!",
@@ -71,7 +69,7 @@ const NormalSignupPage: React.FC = () => {
     } catch (error: any) {
       toast({
         title: "Signup Failed",
-        description: error.message || "Unable to create account. Please try again.",
+        description: error.response?.data?.message || error.message || "Unable to create account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -85,9 +83,7 @@ const NormalSignupPage: React.FC = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <img src={ahimsaHand} alt="Ahimsa Hand" className="h-12 w-12 ahimsa-hand" />
-            <span className="font-serif text-2xl font-semibold text-foreground">
-              Jain Manuscripts
-            </span>
+            <span className="font-serif text-2xl font-semibold text-foreground">Jain Manuscripts</span>
           </div>
           <p className="text-muted-foreground">Create a standard user account</p>
         </div>
@@ -101,6 +97,7 @@ const NormalSignupPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name */}
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -114,6 +111,7 @@ const NormalSignupPage: React.FC = () => {
                 />
               </div>
 
+              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -127,6 +125,7 @@ const NormalSignupPage: React.FC = () => {
                 />
               </div>
 
+              {/* Password */}
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -152,6 +151,7 @@ const NormalSignupPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Confirm Password */}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <div className="relative">
@@ -176,10 +176,23 @@ const NormalSignupPage: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
-              {/* New: Terms and Conditions Checkbox */}
-              
 
+              {/* Terms and Conditions */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="terms"
+                  checked={agreeToTerms}
+                  onCheckedChange={(checked) => setAgreeToTerms(Boolean(checked))}
+                />
+                <Label htmlFor="terms" className="text-sm">
+                  I agree to the{' '}
+                  <Link to="/terms" className="text-primary underline">
+                    terms and conditions
+                  </Link>
+                </Label>
+              </div>
+
+              {/* Submit */}
               <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Signing Up...' : 'Sign Up'}
               </Button>

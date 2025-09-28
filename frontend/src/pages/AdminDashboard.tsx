@@ -15,6 +15,7 @@ const AdminDashboard: React.FC = () => {
   const [pendingResearchers, setPendingResearchers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Fetch pending researcher applications
   const fetchPending = async () => {
     setIsLoading(true);
     try {
@@ -32,21 +33,27 @@ const AdminDashboard: React.FC = () => {
     fetchPending();
   }, []);
 
+  // Approve researcher
   const handleApprove = async (_id: string) => {
     try {
-      await authService.approveResearcher(_id);
-      toast({ title: 'Success!', description: 'Researcher approved.' });
-      fetchPending();
+      const response = await authService.approveResearcher(_id);
+      toast({ title: 'Success!', description: response.message });
+
+      // Remove approved researcher from the table immediately
+      setPendingResearchers(prev => prev.filter(r => r._id !== _id));
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
   };
 
+  // Reject researcher
   const handleReject = async (_id: string) => {
     try {
-      await authService.rejectResearcher(_id);
-      toast({ title: 'Rejected!', description: 'Researcher rejected.' });
-      fetchPending();
+      const response = await authService.rejectResearcher(_id);
+      toast({ title: 'Rejected!', description: response.message });
+
+      // Remove rejected researcher from the table immediately
+      setPendingResearchers(prev => prev.filter(r => r._id !== _id));
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
@@ -115,7 +122,7 @@ const AdminDashboard: React.FC = () => {
                         </Dialog>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleApprove(r._id)} className="text-green-600 hover:text-green-800">
+                        <Button variant="ghost" size="sm" onClick={() => handleApprove(r._id)} className="text-green-600 hover:text-green-800 mr-2">
                           <Check className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleReject(r._id)} className="text-red-600 hover:text-red-800">

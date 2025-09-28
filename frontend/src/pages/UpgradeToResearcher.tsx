@@ -12,39 +12,33 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 
-import { authService, ApplyForResearcherCredentials } from '@/services/authService';
+import { authService } from '@/services/authService';
 
 const UpgradeToResearcherPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<ApplyForResearcherCredentials>({
-    phoneNumber: '',
-    researchDescription: '',
-    idProofFile: null as any,
-  });
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [researchDescription, setResearchDescription] = useState('');
+  const [idProofFile, setIdProofFile] = useState<File | null>(null);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    if (e.target instanceof HTMLInputElement && e.target.type === 'file') {
-      const file = e.target.files?.[0] || null;
-      setFormData(prev => ({ ...prev, [name]: file }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setIdProofFile(e.target.files[0]);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Validation
-    if (!formData.phoneNumber || !formData.researchDescription || !formData.idProofFile) {
+    if (!phoneNumber || !researchDescription || !idProofFile) {
       toast({ title: "Validation Error", description: "Please fill in all fields and upload your ID proof.", variant: "destructive" });
       return;
     }
+
     if (!agreeToTerms) {
       toast({ title: "Terms Required", description: "Please agree to the Terms & Conditions.", variant: "destructive" });
       return;
@@ -52,7 +46,7 @@ const UpgradeToResearcherPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await authService.applyForResearcherStatus({ ...formData, agreeToTerms });
+      const response = await authService.applyForResearcherStatus({ phoneNumber, researchDescription, idProofFile, agreeToTerms });
 
       toast({
         title: "Application Submitted!",
@@ -61,7 +55,7 @@ const UpgradeToResearcherPage: React.FC = () => {
 
       navigate('/dashboard');
     } catch (error: any) {
-      toast({ title: "Application Failed", description: error.message || "Unable to submit application.", variant: "destructive" });
+      toast({ title: "Application Failed", description: error.response?.data?.message || error.message || "Unable to submit application.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +75,6 @@ const UpgradeToResearcherPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Display user info */}
             <div className="space-y-2">
               <Label>Full Name</Label>
               <p className="text-sm text-muted-foreground">{user?.name}</p>
@@ -91,7 +84,6 @@ const UpgradeToResearcherPage: React.FC = () => {
               <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
 
-            {/* Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">Phone Number</Label>
               <Input
@@ -99,38 +91,35 @@ const UpgradeToResearcherPage: React.FC = () => {
                 name="phoneNumber"
                 type="tel"
                 placeholder="+91 9876543210"
-                value={formData.phoneNumber}
-                onChange={handleChange}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 required
               />
             </div>
 
-            {/* Research Description */}
             <div className="space-y-2">
               <Label htmlFor="researchDescription">Research Description</Label>
               <Textarea
                 id="researchDescription"
                 name="researchDescription"
                 placeholder="Briefly describe your area of research."
-                value={formData.researchDescription}
-                onChange={handleChange}
+                value={researchDescription}
+                onChange={(e) => setResearchDescription(e.target.value)}
                 required
               />
             </div>
 
-            {/* ID Proof Upload */}
             <div className="space-y-2">
               <Label htmlFor="idProof">ID Proof (e.g., University ID)</Label>
               <Input
                 id="idProof"
-                name="idProofFile"
+                name="idProof"
                 type="file"
-                onChange={handleChange}
+                onChange={handleFileChange}
                 required
               />
             </div>
 
-            {/* Terms & Conditions */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="terms"
@@ -145,7 +134,6 @@ const UpgradeToResearcherPage: React.FC = () => {
               </Label>
             </div>
 
-            {/* Submit Button */}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>

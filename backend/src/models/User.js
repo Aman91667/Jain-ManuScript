@@ -6,11 +6,16 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['user', 'researcher', 'admin'], default: 'user' },
-  isApproved: { type: Boolean, default: false },
+  isApproved: { type: Boolean, default: false }, // still useful for quick checks
+  status: { 
+    type: String, 
+    enum: ['pending', 'approved', 'rejected'], 
+    default: 'pending' 
+  }, // ✅ New field
   phoneNumber: String,
   researchDescription: String,
   idProofUrl: String,
-  agreeToTerms: { type: Boolean, required: true, default: false }, // <-- Add this field
+  agreeToTerms: { type: Boolean, default: false },
 }, { timestamps: true });
 
 // Hash password before saving
