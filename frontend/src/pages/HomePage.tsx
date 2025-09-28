@@ -108,12 +108,12 @@ const HomePage: React.FC = () => {
                 Browse Manuscripts
               </Link>
             </Button>
-            <Button asChild variant="heritage" size="lg" className="btn-hover">
-              <Link to="/about">
-                Learn About Jainism
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+<Button asChild variant="heritage" size="lg" className="btn-hover">
+  <Link to="/LearnJainismPage"> 
+    Learn About Jainism
+    <ArrowRight className="ml-2 h-5 w-5" />
+  </Link>
+</Button>
           </div>
         </div>
       </section>

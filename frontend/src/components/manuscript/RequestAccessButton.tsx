@@ -17,18 +17,18 @@ const RequestAccessButton: React.FC<RequestAccessButtonProps> = ({ manuscriptId 
   const navigate = useNavigate();
 
   const handleRequest = () => {
-    if (user?.role !== 'user') {
-      toast({
-        title: "Error",
-        description: "Only normal users can apply for researcher status.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const role = user?.role;
+  if (role !== 'user') {
+    toast({
+      title: 'Error',
+      description: 'Only normal users can apply for researcher status.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  navigate('/dashboard');
+};
 
-    // Navigate to dashboard for applying as researcher
-    navigate('/dashboard');
-  };
 
   return (
     <Button

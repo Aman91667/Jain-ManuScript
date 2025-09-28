@@ -14,13 +14,16 @@ const Navbar: React.FC = () => {
 
   // ✅ CORRECTED: Change label to "Admin Dashboard" if the user is an admin
   const navLinks = [
-    { path: '/', label: 'Home' },
-    { path: '/browse', label: 'Browse Manuscripts' },
-    ...(isAuthenticated 
-      ? [{ path: '/dashboard', label: user?.role === 'admin' ? 'Admin Dashboard' : 'Dashboard' }] 
-      : []
-    ),
-  ];
+  { path: '/', label: 'Home' },
+  { path: '/browse', label: 'Browse Manuscripts' },
+  ...(isAuthenticated
+    ? [{
+        path: '/dashboard',
+        label: user?.role === 'admin' ? 'Admin Dashboard' : 'Dashboard',
+      }]
+    : []),
+];
+
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

@@ -25,7 +25,7 @@ const ResearcherSignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -58,10 +58,22 @@ const ResearcherSignupPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+
     setIsLoading(true);
     try {
       const { name, email, password, phoneNumber, researchDescription } = formData;
-      await signup({ name, email, password, phoneNumber, researchDescription, idProofFile });
+
+      // Send agreeToTerms to backend
+      await signup({ 
+        name, 
+        email, 
+        password, 
+        phoneNumber, 
+        researchDescription, 
+        idProofFile, 
+        agreeToTerms // <-- include this
+      });
+
       toast({ title: "Welcome to Jain Manuscripts!", description: "Your account has been created. Please wait for an admin to approve your request." });
       navigate('/dashboard');
     } catch (error: any) {
@@ -76,87 +88,43 @@ const ResearcherSignupPage: React.FC = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <img src={ahimsaHand} alt="Ahimsa Hand" className="h-12 w-12 ahimsa-hand" />
-            <span className="font-serif text-2xl font-semibold text-foreground">
-              Jain Manuscripts
-            </span>
+            <img src={ahimsaHand} alt="Ahimsa Hand" className="h-12 w-12" />
+            <span className="font-serif text-2xl font-semibold text-foreground">Jain Manuscripts</span>
           </div>
-          <p className="text-muted-foreground">
-            Join our research community
-          </p>
+          <p className="text-muted-foreground">Join our research community</p>
         </div>
         <Card className="shadow-medium">
           <CardHeader className="text-center">
             <CardTitle className="font-serif text-2xl">Create Researcher Account</CardTitle>
-            <CardDescription>
-              Join our community of researchers and scholars
-            </CardDescription>
+            <CardDescription>Join our community of researchers and scholars</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name and Email */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Dr. Priya Sharma"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    autoComplete="name"
-                  />
+                  <Input id="name" name="name" type="text" placeholder="Akshat Jain" value={formData.name} onChange={handleChange} required autoComplete="name" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="researcher@university.edu"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    autoComplete="email"
-                  />
-                </div>
+                  <Input id="email" name="email" type="email" placeholder="researcher@gmail.com" value={formData.email} onChange={handleChange} required autoComplete="email" />
+                </div>  
               </div>
+
+              {/* Phone Number */}
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone Number</Label>
-                <Input
-                  id="phoneNumber"
-                  name="phoneNumber"
-                  type="tel"
-                  placeholder="+91 9876543210"
-                  value={formData.phoneNumber}
-                  onChange={handleChange}
-                  required
-                  autoComplete="tel"
-                />
+                <Input id="phoneNumber" name="phoneNumber" type="tel" placeholder="+91 9876543210" value={formData.phoneNumber} onChange={handleChange} required autoComplete="tel" />
               </div>
+
+              {/* Password & Confirm Password */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create a strong password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      autoComplete="new-password"
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
+                    <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Create a strong password" value={formData.password} onChange={handleChange} required autoComplete="new-password" className="pr-10" />
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
@@ -164,67 +132,38 @@ const ResearcherSignupPage: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      autoComplete="new-password"
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
+                    <Input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Confirm your password" value={formData.confirmPassword} onChange={handleChange} required autoComplete="new-password" className="pr-10" />
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
               </div>
+
+              {/* Research Description */}
               <div className="space-y-2">
                 <Label htmlFor="researchDescription">Research Description</Label>
-                <Textarea
-                  id="researchDescription"
-                  name="researchDescription"
-                  placeholder="Briefly describe your area of research or interest in Jain manuscripts."
-                  value={formData.researchDescription}
-                  onChange={handleChange}
-                  required
-                />
+                <Textarea id="researchDescription" name="researchDescription" placeholder="Briefly describe your area of research or interest in Jain manuscripts." value={formData.researchDescription} onChange={handleChange} required />
               </div>
+
+              {/* ID Proof */}
               <div className="space-y-2">
                 <Label htmlFor="idProof">ID Proof (e.g., University ID)</Label>
-                <Input
-                  id="idProof"
-                  name="idProof"
-                  type="file"
-                  onChange={(e) => setIdProofFile(e.target.files?.[0] || null)}
-                  required
-                />
+                <Input id="idProof" name="idProof" type="file" onChange={(e) => setIdProofFile(e.target.files?.[0] || null)} required />
               </div>
+
+              {/* Terms & Conditions */}
               <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="terms"
-                  checked={agreeToTerms}
-                  onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
-                />
+                <Checkbox id="terms" checked={agreeToTerms} onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)} />
                 <Label htmlFor="terms" className="text-sm font-normal cursor-pointer">
                   I agree to the{' '}
                   <Link to="/terms" className="text-primary hover:text-primary/80 link-hover">
-                    Terms of Service
-                  </Link>
-                  {' '}and{' '}
-                  <Link to="/privacy" className="text-primary hover:text-primary/80 link-hover">
-                    Privacy Policy
+                    Terms & Condition
                   </Link>
                 </Label>
               </div>
+
+              {/* Submit */}
               <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -239,6 +178,7 @@ const ResearcherSignupPage: React.FC = () => {
                 )}
               </Button>
             </form>
+
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{' '}
@@ -249,6 +189,7 @@ const ResearcherSignupPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
         <div className="text-center mt-6">
           <p className="text-xs text-muted-foreground italic">
             "Parasparopagraho jivanam" - Souls render service to one another

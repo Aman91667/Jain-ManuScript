@@ -3,185 +3,143 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-// ✅ NEW: Type for the approved manuscripts
-export interface ManuscriptType {
-  id: string;
-  title: string;
-  access: string;
-}
-
-// ✅ UPDATED: Added new optional fields to the User interface
+// --------------------
+// Types
+// --------------------
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'user' | 'researcher' | 'admin';
-  isApproved: boolean;
-  phoneNumber?: string;
-  researchDescription?: string;
-  idProofUrl?: string;
-  approvedManuscripts?: ManuscriptType[];
+    _id: string; // backend me _id hai
+    name: string;
+    email: string;
+    role: 'user' | 'researcher' | 'admin';
+    isApproved: boolean;
+    phoneNumber?: string;
+    researchDescription?: string;
+    idProofUrl?: string;
 }
 
 export interface LoginCredentials {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
 }
 
 export interface SignupNormalCredentials {
-  name: string;
-  email: string;
-  password: string;
+    name: string;
+    email: string;
+    password: string;
 }
 
 export interface SignupResearcherCredentials {
-  name: string;
-  email: string;
-  password: string;
-  phoneNumber: string;
-  researchDescription: string;
-  idProofFile: File;
+    name: string;
+    email: string;
+    password: string;
+    phoneNumber: string;
+    researchDescription: string;
+    idProofFile: File;
 }
 
 export interface ApplyForResearcherCredentials {
-  phoneNumber: string;
-  researchDescription: string;
-  idProofFile: File;
+    phoneNumber: string;
+    researchDescription: string;
+    idProofFile: File;
 }
 
 export interface AuthResponse {
-  user: User;
-  token: string;
+    user: User;
+    token: string;
 }
 
-// ✅ NEW: Type for the getCurrentUser response
-export interface CurrentUserResponse {
-  user: User;
-}
+// --------------------
+// Axios instance
+// --------------------
+const api = axios.create({ baseURL: API_URL });
 
-const api = axios.create({
-  baseURL: `${API_URL}/api/auth`,
-});
-
-// Add token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+    const token = localStorage.getItem('authToken');
+    if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+    return config;
 });
 
-const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  try {
-    const response = await api.post('/login', credentials);
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Login failed');
-  }
-};
-
-const signupNormal = async (credentials: SignupNormalCredentials): Promise<AuthResponse> => {
-  try {
-    const response = await api.post('/signup/user', credentials);
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Signup failed');
-  }
-};
-
-const signupResearcher = async (credentials: SignupResearcherCredentials): Promise<AuthResponse> => {
-  try {
-    const formData = new FormData();
-    formData.append('name', credentials.name);
-    formData.append('email', credentials.email);
-    formData.append('password', credentials.password);
-    formData.append('phoneNumber', credentials.phoneNumber);
-    formData.append('researchDescription', credentials.researchDescription);
-    formData.append('idProofFile', credentials.idProofFile);
-
-    const response = await api.post('/signup/researcher', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Researcher signup failed');
-  }
-};
-
-const applyForResearcherStatus = async (credentials: ApplyForResearcherCredentials) => {
-  try {
-    const formData = new FormData();
-    formData.append('phoneNumber', credentials.phoneNumber);
-    formData.append('researchDescription', credentials.researchDescription);
-    formData.append('idProofFile', credentials.idProofFile);
-
-    const response = await api.post('/apply-for-researcher', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Application failed');
-  }
-};
-
-// ✅ UPDATED: Correctly returns the user object from the response
-const getCurrentUser = async (): Promise<User> => {
-  try {
-    const response = await api.get<CurrentUserResponse>('/me');
-    return response.data.user;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to get current user');
-  }
-};
-
-const logout = (): void => {
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('userData');
-  delete axios.defaults.headers.common['Authorization'];
-};
-
-// Functions for Admin Dashboard
-const fetchPendingApplications = async () => {
-  try {
-    const response = await api.get('/admin/researcher-applications');
-    return response.data.applications;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch pending applications.');
-  }
-};
-
-const approveResearcher = async (researcherId: string) => {
-  try {
-    const response = await api.patch(`/admin/approve/${researcherId}`);
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to approve researcher.');
-  }
-};
-
-const rejectResearcher = async (researcherId: string) => {
-  try {
-    const response = await api.patch(`/admin/reject/${researcherId}`);
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to reject researcher.');
-  }
-};
-
-
+// --------------------
+// Auth Functions
+// --------------------
 export const authService = {
-  login,
-  signupNormal,
-  signupResearcher,
-  applyForResearcherStatus,
-  getCurrentUser,
-  logout,
-  fetchPendingApplications,
-  approveResearcher,
-  rejectResearcher,
+    login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+        const res = await api.post<AuthResponse>('/api/auth/login', credentials);
+        return res.data;
+    },
+
+    signupNormal: async (credentials: SignupNormalCredentials): Promise<AuthResponse> => {
+        const res = await api.post<AuthResponse>('/api/auth/signup/user', credentials);
+        return res.data;
+    },
+
+    signupResearcher: async (credentials: SignupResearcherCredentials): Promise<AuthResponse> => {
+        const formData = new FormData();
+        formData.append('name', credentials.name);
+        formData.append('email', credentials.email);
+        formData.append('password', credentials.password);
+        formData.append('phoneNumber', credentials.phoneNumber);
+        formData.append('researchDescription', credentials.researchDescription);
+        formData.append('idProofFile', credentials.idProofFile);
+
+        const res = await api.post<AuthResponse>('/api/auth/signup/researcher', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return res.data;
+    },
+
+    applyForResearcherStatus: async (credentials: ApplyForResearcherCredentials): Promise<AuthResponse> => {
+        const formData = new FormData();
+        formData.append('phoneNumber', credentials.phoneNumber);
+        formData.append('researchDescription', credentials.researchDescription);
+        formData.append('idProofFile', credentials.idProofFile);
+
+        const res = await api.post<AuthResponse>('/api/auth/apply-for-researcher', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return res.data;
+    },
+
+    getCurrentUser: async (): Promise<User> => {
+        const res = await api.get<User>('/api/auth/me');
+        return res.data;
+    },
+
+    logout: () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+    },
+
+    // --------------------
+    // Admin Functions
+    // --------------------
+    fetchPendingApplications: async (): Promise<User[]> => {
+        const userData = localStorage.getItem('userData');
+        if (!userData) throw new Error('Unauthorized');
+        const user: User = JSON.parse(userData);
+        if (user.role !== 'admin') throw new Error('Only admins can view pending applications');
+
+        const res = await api.get<User[]>('/api/admin/researcher/requests');
+        return res.data; // backend returns array directly
+    },
+
+    approveResearcher: async (researcherId: string): Promise<{ message: string }> => {
+        const userData = localStorage.getItem('userData');
+        if (!userData) throw new Error('Unauthorized');
+        const user: User = JSON.parse(userData);
+        if (user.role !== 'admin') throw new Error('Only admins can approve researchers');
+
+        const res = await api.put<{ message: string }>(`/api/admin/researcher/approve/${researcherId}`, { isApproved: true });
+        return res.data;
+    },
+
+    rejectResearcher: async (researcherId: string): Promise<{ message: string }> => {
+        const userData = localStorage.getItem('userData');
+        if (!userData) throw new Error('Unauthorized');
+        const user: User = JSON.parse(userData);
+        if (user.role !== 'admin') throw new Error('Only admins can reject researchers');
+
+        const res = await api.put<{ message: string }>(`/api/admin/researcher/approve/${researcherId}`, { isApproved: false });
+        return res.data;
+    },
 };

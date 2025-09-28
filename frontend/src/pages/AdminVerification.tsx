@@ -19,7 +19,7 @@ const AdminVerification: React.FC = () => {
 
     try {
       // ✅ FIX: Mocking the verification process for now
-      if (code !== '123456') { // Mock code for testing
+      if (code !== '982933') { // Mock code for testing
         throw new Error('Invalid code');
       }
 

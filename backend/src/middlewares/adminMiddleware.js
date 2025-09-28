@@ -1,13 +1,6 @@
-// middlewares/adminMiddleware.js
-// This middleware ensures the user has an 'admin' role before proceeding.
-
+// This middleware assumes `protect` has already run
 module.exports = (req, res, next) => {
-    // Check if the user object was attached by the authentication middleware
-    if (req.user && req.user.role === 'admin') {
-        // If the user is an admin, proceed to the next handler
-        next();
-    } else {
-        // If not an admin, send a 403 Forbidden response
-        res.status(403).json({ message: 'Access denied. Admin privileges required.' });
-    }
+  if (!req.user) return res.status(401).json({ message: "Not authorized" });
+  if (req.user.role !== 'admin') return res.status(403).json({ message: "Admin access required" });
+  next();
 };

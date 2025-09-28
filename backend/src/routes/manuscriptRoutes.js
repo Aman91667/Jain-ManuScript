@@ -1,41 +1,54 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const multer = require('multer'); // <--- NEW: Import Multer here
+const { v4: uuidv4 } = require('uuid'); // <--- NEW: Import uuid
+const path = require('path'); // <--- NEW: Import path
+const fs = require('fs'); // <--- NEW: Import fs
 
-const manuscriptController = require('../controllers/manuscriptController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
+const manuscriptController = require('../controllers/manuscriptController');
 
-// --- Upload folder ---
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// -----------------------------------------------------------------
+// MULTER SETUP (Moved from missing uploadMiddleware.js)
+// -----------------------------------------------------------------
 
-// --- Multer config ---
+const uploadDir = path.join(process.cwd(), 'uploads');
+// Ensure the 'uploads' directory exists
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname));
-  },
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, uuidv4() + '-' + file.originalname),
 });
 const upload = multer({ storage });
 
-// ---------------------
-// Public manuscripts
-// ---------------------
-router.get('/public', manuscriptController.getPublicManuscripts);
-router.post('/public', protect, authorize('user', 'admin'), upload.single('files'), manuscriptController.uploadPublicManuscript);
+// -----------------------------------------------------------------
+// MANUSCRIPT ROUTES
+// -----------------------------------------------------------------
 
-// ---------------------
-// Detailed manuscripts
-// ---------------------
-router.post('/detailed', protect, authorize('researcher', 'admin'), upload.array('files', 10), manuscriptController.uploadDetailedManuscript);
+// Public manuscripts - anyone logged in can access
+router.get('/public', protect, manuscriptController.getPublicManuscripts);
 
-// ---------------------
-// Featured & general
-// ---------------------
-router.get('/featured', manuscriptController.getFeaturedManuscripts);
-router.get('/', protect, manuscriptController.getAllManuscripts);
+// Researcher manuscripts - only approved researchers
+router.get('/researcher', protect, manuscriptController.getResearcherManuscripts);
+
+// Admin: all manuscripts
+router.get('/admin', protect, authorize('admin'), manuscriptController.getAllManuscripts);
+
+// --- CRUD ROUTES WITH AUTHORIZATION ---
+
+// Upload manuscript: Now REQUIRES 'admin' role
+router.post('/', protect, authorize('admin'), upload.array('files', 5), manuscriptController.uploadManuscript);
+
+// Update manuscript: Requires 'admin' OR the owner to be logged in (check is in controller)
+router.put('/:id', protect, upload.array('files', 5), manuscriptController.updateManuscript);
+
+// Delete manuscript: Requires 'admin' OR the owner to be logged in (check is in controller)
+router.delete('/:id', protect, manuscriptController.deleteManuscript);
+
+// Get manuscript by ID - restricted access for researcher-only manuscripts
 router.get('/:id', protect, manuscriptController.getManuscriptById);
 
 module.exports = router;

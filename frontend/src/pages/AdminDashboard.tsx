@@ -5,33 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Upload, File } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { authService } from '@/services/authService';
-
-interface Researcher {
-  _id: string;
-  userId?: { // Make userId optional as it might be undefined
-    _id: string;
-    name: string;
-    email: string;
-  };
-  phoneNumber: string;
-  researchDescription: string;
-  idProofUrl: string;
-}
+import { authService, User } from '@/services/authService';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [pendingResearchers, setPendingResearchers] = useState<Researcher[]>([]);
+  const [pendingResearchers, setPendingResearchers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchPending = async () => {
@@ -40,11 +21,7 @@ const AdminDashboard: React.FC = () => {
       const applications = await authService.fetchPendingApplications();
       setPendingResearchers(applications);
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: err.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
       setPendingResearchers([]);
     } finally {
       setIsLoading(false);
@@ -55,37 +32,23 @@ const AdminDashboard: React.FC = () => {
     fetchPending();
   }, []);
 
-  const handleApprove = async (researcherId: string) => {
+  const handleApprove = async (_id: string) => {
     try {
-      await authService.approveResearcher(researcherId);
-      toast({
-        title: 'Success!',
-        description: 'Researcher has been approved.',
-      });
+      await authService.approveResearcher(_id);
+      toast({ title: 'Success!', description: 'Researcher approved.' });
       fetchPending();
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: err.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
   };
 
-  const handleReject = async (researcherId: string) => {
+  const handleReject = async (_id: string) => {
     try {
-      await authService.rejectResearcher(researcherId);
-      toast({
-        title: 'Rejected!',
-        description: 'Researcher application has been rejected.',
-      });
+      await authService.rejectResearcher(_id);
+      toast({ title: 'Rejected!', description: 'Researcher rejected.' });
       fetchPending();
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: err.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -100,13 +63,11 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">Admin Panel</h1>
-          <p className="text-muted-foreground text-lg">Manage platform content and users.</p>
-        </div>
+        <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">Admin Panel</h1>
+        <p className="text-muted-foreground text-lg mb-6">Manage platform content and users.</p>
 
         <Card className="mb-8">
-          <CardHeader className="flex flex-row justify-between items-center">
+          <CardHeader className="flex justify-between items-center">
             <div>
               <CardTitle className="font-serif text-xl">Pending Researcher Applications</CardTitle>
               <CardDescription>Review and approve new research applicants.</CardDescription>
@@ -128,13 +89,9 @@ const AdminDashboard: React.FC = () => {
                 <TableBody>
                   {pendingResearchers.map((r) => (
                     <TableRow key={r._id}>
-                      <TableCell>{r.userId?.name}</TableCell>
+                      <TableCell>{r.name}</TableCell>
                       <TableCell>{r.phoneNumber}</TableCell>
-                      <TableCell>
-                        <div className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                          {r.researchDescription}
-                        </div>
-                      </TableCell>
+                      <TableCell className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{r.researchDescription}</TableCell>
                       <TableCell>
                         <Dialog>
                           <DialogTrigger asChild>
@@ -145,13 +102,11 @@ const AdminDashboard: React.FC = () => {
                           <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
                               <DialogTitle>ID Proof</DialogTitle>
-                              <DialogDescription>
-                                View the uploaded ID proof for the researcher.
-                              </DialogDescription>
+                              <DialogDescription>View the uploaded ID proof.</DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
                               {r.idProofUrl ? (
-                                <img src={`http://localhost:4000${r.idProofUrl}`} alt="ID Proof" className="max-w-full h-auto" />
+                                <img src={`http://localhost:4000/${r.idProofUrl}`} alt="ID Proof" className="max-w-full h-auto" />
                               ) : (
                                 <p>No ID Proof uploaded.</p>
                               )}
@@ -183,7 +138,7 @@ const AdminDashboard: React.FC = () => {
               <CardTitle className="font-serif text-xl">Upload New Manuscripts</CardTitle>
               <CardDescription>Add new manuscripts to the collection.</CardDescription>
             </div>
-            <Button onClick={() => navigate("/admin/upload-manuscript")}>
+            <Button onClick={() => navigate('/admin/upload-manuscript')}>
               <Upload className="h-4 w-4 mr-2" />
               Upload Manuscript
             </Button>

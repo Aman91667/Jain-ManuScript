@@ -22,16 +22,25 @@ interface ManuscriptCardProps {
   onCardClick: (manuscript: Manuscript) => void;
 }
 
+const BASE_URL = 'http://localhost:4000/'; // Backend URL
+
 const ManuscriptCard: React.FC<ManuscriptCardProps> = ({ manuscript, onCardClick }) => {
   const imageSrc =
     manuscript.thumbnail
-      ? manuscript.thumbnail
+      ? `${BASE_URL}${manuscript.thumbnail.replace(/^\/+/, '')}`
       : manuscript.files && manuscript.files.length > 0
-      ? `http://localhost:4000${manuscript.files[0]}`
+      ? `${BASE_URL}${manuscript.files[0].replace(/^\/+/, '')}`
       : '/placeholder.svg';
 
   return (
-    <Card className="manuscript-card group h-full cursor-pointer" onClick={() => onCardClick(manuscript)}>
+    // 1. Add 'flex' and 'flex-col' to make the Card a column-based flex container
+    //    and ensure it takes the full available height ('h-full').
+    <Card 
+      className="manuscript-card group h-full cursor-pointer flex flex-col" 
+      onClick={() => onCardClick(manuscript)}
+    >
+      
+      {/* CardHeader: Stays at the top */}
       <CardHeader className="p-0">
         <div className="relative overflow-hidden rounded-t-lg">
           <img
@@ -47,7 +56,9 @@ const ManuscriptCard: React.FC<ManuscriptCardProps> = ({ manuscript, onCardClick
         </div>
       </CardHeader>
 
-      <CardContent className="p-4">
+      {/* CardContent: Uses 'flex-grow' to consume all remaining space, 
+          pushing the footer to the bottom. */}
+      <CardContent className="p-4 flex-grow">
         <h3 className="font-serif text-lg font-semibold mb-2 line-clamp-2">{manuscript.title}</h3>
 
         <div className="space-y-2 mb-3">
@@ -67,11 +78,10 @@ const ManuscriptCard: React.FC<ManuscriptCardProps> = ({ manuscript, onCardClick
           {manuscript.description}
         </div>
 
-        <div className="flex items-center justify-between">
-          {manuscript.language && <Badge variant="outline" className="text-xs">{manuscript.language}</Badge>}
-        </div>
+        {manuscript.language && <Badge variant="outline" className="text-xs">{manuscript.language}</Badge>}
       </CardContent>
 
+      {/* CardFooter: Stays fixed at the bottom */}
       <CardFooter className="p-4 pt-0">
         <Button variant="default" className="w-full">
           <Eye className="h-4 w-4 mr-2" />

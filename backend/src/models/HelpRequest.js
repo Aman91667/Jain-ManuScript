@@ -1,5 +1,3 @@
-// HelpRequest.js - Defines the schema for a help request submitted by a researcher.
-
 const mongoose = require('mongoose');
 
 const helpRequestSchema = new mongoose.Schema({
@@ -13,11 +11,10 @@ const helpRequestSchema = new mongoose.Schema({
   manuscriptId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Manuscript',
-    default: null,
+    default: null,  // optional
   },
   message: { type: String, required: true },
   status: { type: String, enum: ['open', 'resolved'], default: 'open' },
-  createdAt: { type: Date, default: Date.now },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('HelpRequest', helpRequestSchema);

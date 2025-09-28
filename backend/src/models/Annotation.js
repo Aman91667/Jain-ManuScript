@@ -1,5 +1,3 @@
-// Annotation.js - Defines the schema for a researcher's annotation on a manuscript.
-
 const mongoose = require('mongoose');
 
 const annotationSchema = new mongoose.Schema({
@@ -25,8 +23,6 @@ const annotationSchema = new mongoose.Schema({
     width: { type: Number, required: true },
     height: { type: Number, required: true },
   },
-  
-  createdAt: { type: Date, default: Date.now },
-});
+}, { timestamps: true }); // ✅ Recommended for automated createdAt and updatedAt fields
 
 module.exports = mongoose.model('Annotation', annotationSchema);

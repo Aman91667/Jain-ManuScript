@@ -13,19 +13,22 @@ const Footer: React.FC = () => {
               <img 
                 src={ahimsaHand} 
                 alt="Ahimsa Hand" 
-                className="h-8 w-8 ahimsa-hand"
+                className="h-8 w-8"
               />
               <span className="font-serif text-xl font-semibold">
                 Jain Manuscripts Platform
               </span>
             </div>
-            <p className="text-muted-foreground mb-4 max-w-md">
-              Preserving and sharing the sacred heritage of Jainism through digital manuscripts, 
-              fostering research and spiritual growth for future generations.
-            </p>
-            <p className="text-sm text-muted-foreground italic">
-              "Ahimsa paramo dharma" - Non-violence is the highest virtue
-            </p>
+
+            <div className="text-center mx-auto my-4 max-w-2xl">
+              <p className="text-muted-foreground mb-2">
+                Preserving and sharing the sacred heritage of Jainism through digital manuscripts, 
+                fostering research and spiritual growth for future generations.
+              </p>
+              <p className="text-sm text-muted-foreground italic">
+                "Ahimsa paramo dharma" - Non-violence is the highest virtue
+              </p>
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -43,8 +46,8 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-muted-foreground hover:text-primary link-hover text-sm">
-                  About Jainism
+                <Link to="/LearnJainismPage" className="text-muted-foreground hover:text-primary link-hover text-sm">
+                  Learn About Jainism
                 </Link>
               </li>
               <li>
@@ -75,7 +78,7 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/help" className="text-muted-foreground hover:text-primary link-hover text-sm">
+                <Link to="/contact" className="text-muted-foreground hover:text-primary link-hover text-sm">
                   Help & Support
                 </Link>
               </li>

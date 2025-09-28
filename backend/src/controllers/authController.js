@@ -1,227 +1,149 @@
-// controllers/authController.js
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User'); // ✅ We'll use this model for everything
+const User = require('../models/User');
+const Researcher = require('../models/Researcher');
 
-const path = require('path');
-const fs = require('fs');
+// Generate JWT Token
+const generateToken = (user) => {
+    return jwt.sign(
+        { id: user._id, role: user.role, isApproved: user.isApproved },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+    );
+};
 
-/**
- * Normal user signup
- */
+// Signup Normal User
 exports.signupNormal = async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: 'Name, email and password are required.' });
-        }
+        if (!name || !email || !password)
+            return res.status(400).json({ message: 'Name, email, and password required' });
 
-        const normalizedEmail = String(email).trim().toLowerCase();
-        let user = await User.findOne({ email: normalizedEmail });
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
-        if (user) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // ✅ Storing all data on the User model
-        user = new User({ name, email: normalizedEmail, password, role: 'user', isApproved: true });
+        const user = new User({
+            name,
+            email,
+            password: hashedPassword,
+            role: 'user',
+            isApproved: true,
+        });
+
         await user.save();
 
-        const token = jwt.sign({ id: user.id, role: user.role, isApproved: user.isApproved }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.status(201).json({ user, token, message: 'Account created successfully' });
+        res.status(201).json({ user, token: generateToken(user), message: 'Signup successful' });
     } catch (err) {
-        console.error('[signupNormal] error', err);
-        res.status(500).json({ message: err.message || 'Server error' });
+        console.error('Error in signupNormal:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
-/**
- * Combined logic for researcher signup and application
- */
+// Signup Researcher
 exports.signupResearcher = async (req, res) => {
     try {
-        const { name, email, password, phoneNumber, researchDescription } = req.body;
-        const idProofUrl = req.file ? `/uploads/${req.file.filename}` : null;
+      const { name, email, password, phoneNumber, researchDescription, agreeToTerms } = req.body;
+        const idProofUrl = req.file ? `uploads/${req.file.filename}` : null;
 
-        if (!name || !email || !password || !phoneNumber || !researchDescription || !idProofUrl) {
+        if (!name || !email || !password || !phoneNumber || !researchDescription  || agreeToTerms !== 'true')
             return res.status(400).json({ message: 'All fields are required' });
-        }
 
-        const normalizedEmail = String(email).trim().toLowerCase();
-        let user = await User.findOne({ email: normalizedEmail });
-        if (user) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
-        user = new User({
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = new User({
             name,
-            email: normalizedEmail,
-            password,
-            role: 'researcher', // ✅ The role is 'researcher' from the start
+            email,
+            password: hashedPassword,
+            role: 'researcher',
             isApproved: false,
-            phoneNumber, // ✅ All data is on the User model
+            phoneNumber,
             researchDescription,
-            idProofUrl
+            idProofUrl,
+            agreeToTerms: true,
         });
         await user.save();
 
-        const token = jwt.sign({ id: user.id, role: user.role, isApproved: user.isApproved }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.status(201).json({ user, token, message: 'Application submitted successfully. Awaiting admin approval.' });
+        const researcher = new Researcher({
+            userId: user._id,
+            phoneNumber,
+            researchDescription,
+            idProofUrl,
+            isApproved: false,
+        });
+        await researcher.save();
+
+        res.status(201).json({
+            user,
+            token: generateToken(user),
+            message: 'Application submitted. Await admin approval',
+        });
     } catch (err) {
-        console.error('[signupResearcher] error', err);
-        res.status(500).json({ message: err.message || 'Server error' });
+        console.error('Error in signupResearcher:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
+// Login
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body || {};
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Email and password required' });
-        }
-
-        const normalizedEmail = String(email).trim().toLowerCase();
-        const user = await User.findOne({ email: normalizedEmail });
-
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
+        if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-        const token = jwt.sign({ id: user.id, role: user.role, isApproved: user.isApproved }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const safeUser = { ...user.toObject() };
-        delete safeUser.password;
-        res.json({ user: safeUser, token, message: 'Logged in successfully' });
+        res.status(200).json({ user, token: generateToken(user) });
     } catch (err) {
-        console.error('[login] error', err);
-        res.status(500).json({ message: err.message || 'Server error' });
+        console.error('Error in login:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
-// src/controllers/authController.js
-
-// ... other functions ...
-
-// ✅ UPDATE THIS FUNCTION
+// Get Current User
 exports.getCurrentUser = async (req, res) => {
-  try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-    
-    // ✅ NEW: Temporary empty array to resolve frontend error
-    const approvedManuscripts = [];
-
-    // Send the user data along with the new field
-    res.json({ 
-        user: {
-            ...user.toObject(),
-            approvedManuscripts
-        }
-    });
-
-  } catch (err) {
-    console.error("[getCurrentUser] error", err);
-    res.status(500).json({ message: "Server error" });
-  }
+    try {
+        if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+        res.status(200).json(req.user);
+    } catch (err) {
+        console.error('Error in getCurrentUser:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 };
 
+// Apply to become Researcher
 exports.applyForResearcherStatus = async (req, res) => {
-    try {
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({ message: 'Unauthorized. User not logged in.' });
-        }
-        const userId = req.user.id; 
+  try {
+    const userId = req.user._id; // from protect middleware
+    const { phoneNumber, researchDescription, agreeToTerms } = req.body;
+    const idProofFile = req.file;
 
-        const { phoneNumber, researchDescription } = req.body;
-        const idProofUrl = req.file ? `/uploads/${req.file.filename}` : null;
-
-        if (!phoneNumber || !researchDescription || !idProofUrl) {
-            return res.status(400).json({ message: 'All fields are required.' });
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found.' });
-        }
-
-        // ✅ Storing application data on the existing user's document
-        user.phoneNumber = phoneNumber;
-        user.researchDescription = researchDescription;
-        user.idProofUrl = idProofUrl;
-        user.role = 'researcher'; // ✅ Set role to researcher
-        user.isApproved = false; // ✅ Set approval to false
-        await user.save();
-
-        res.status(200).json({ message: 'Application submitted successfully. Awaiting admin approval.' });
-    } catch (err) {
-        console.error('[applyForResearcherStatus] error', err);
-        res.status(500).json({ message: err.message || 'Server error' });
+    // Validation
+    if (!phoneNumber || !researchDescription || !idProofFile || agreeToTerms !== 'true') {
+      return res.status(400).json({ message: 'All fields and agreeing to terms are required.' });
     }
-};
 
-// ✅ REWRITTEN: Get pending applications from the User model directly
-exports.getPendingResearchers = async (req, res) => {
-    try {
-        const applications = await User.find({
-            role: 'researcher',
-            isApproved: false
-        }).select('-password');
-        res.status(200).json({ applications });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ message: 'Server error.' });
-    }
-};
+    // Update user
+    const user = await User.findByIdAndUpdate(userId, {
+      phoneNumber,
+      researchDescription,
+      idProofUrl: `/uploads/${idProofFile.filename}`,
+      agreeToTerms: true,
+      role: 'researcher',   // Optionally, mark as researcher role
+      isApproved: false,    // Wait for admin approval
+    }, { new: true });
 
-// ✅ REWRITTEN: Approve a researcher by updating the User model
-exports.approveResearcher = async (req, res) => {
-    try {
-        const { researcherId } = req.params;
-        const user = await User.findById(researcherId);
-
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found.' });
-        }
-        
-        user.isApproved = true;
-        await user.save();
-
-        res.json({ msg: 'Researcher approved successfully' });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ message: 'Server error. Failed to approve request.' }); 
-    }
-};
-
-// ✅ REWRITTEN: Reject a researcher by resetting User model fields
-exports.rejectResearcher = async (req, res) => {
-    try {
-        const { researcherId } = req.params;
-        const user = await User.findById(researcherId);
-
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found.' });
-        }
-
-        user.isApproved = false; // Set this to false in case you want to use it
-        user.role = 'user'; // Revert role back to 'user'
-        user.phoneNumber = undefined; // Clear the application fields
-        user.researchDescription = undefined;
-        user.idProofUrl = undefined;
-        await user.save();
-
-        res.json({ msg: 'Researcher application rejected successfully' });
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ message: 'Server error. Failed to reject request.' });
-    }
+    res.status(200).json({
+      message: 'Application submitted successfully. Await admin approval.',
+      user,
+    });
+  } catch (error) {
+    console.error('Apply for researcher error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 };

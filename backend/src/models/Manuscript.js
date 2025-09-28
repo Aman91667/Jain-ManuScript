@@ -2,24 +2,17 @@ const mongoose = require('mongoose');
 
 const manuscriptSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  description: { type: String },
-  category: { type: String, trim: true },
-  language: { type: String, trim: true },
-  period: { type: String, trim: true },
-  author: { type: String, trim: true },
-  keywords: { type: [String] },
-  files: { type: [String], required: true },
-  uploadType: {
-    type: String,
-    enum: ['normal', 'detailed'],
-    required: true,
-  },
-  uploadedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  },
-}, {
-  timestamps: true,
-});
+  description: String,
+  content: String,
+  category: String,
+  visibility: { type: String, enum: ['public', 'researcher'], default: 'public' },
+  language: String,
+  period: String,
+  author: String,
+  keywords: [String],
+  uploadType: { type: String, enum: ['normal', 'detailed'], default: 'normal' },
+  files: [{ type: String }],
+  uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
 
 module.exports = mongoose.model('Manuscript', manuscriptSchema);

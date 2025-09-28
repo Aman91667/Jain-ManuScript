@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox'; // Added Checkbox import
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
@@ -19,6 +20,7 @@ const NormalSignupPage: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false); // New state for terms
   const [isLoading, setIsLoading] = useState(false);
 
   const { signup } = useAuth();
@@ -43,6 +45,11 @@ const NormalSignupPage: React.FC = () => {
       toast({ title: "Weak Password", description: "Password must be at least 6 characters long.", variant: "destructive" });
       return false;
     }
+    // New validation for terms
+    if (!agreeToTerms) {
+      toast({ title: "Terms Required", description: "Please agree to the terms and conditions.", variant: "destructive" });
+      return false;
+    }
     return true;
   };
 
@@ -53,7 +60,7 @@ const NormalSignupPage: React.FC = () => {
     setIsLoading(true);
     try {
       const { name, email, password } = formData;
-      await signup({ name, email, password }); // ✅ Calls AuthContext signup
+      await signup({ name, email, password }); 
 
       toast({
         title: "Welcome!",
@@ -100,7 +107,7 @@ const NormalSignupPage: React.FC = () => {
                   id="name"
                   name="name"
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="Aman Jain"
                   value={formData.name}
                   onChange={handleChange}
                   required
@@ -169,6 +176,9 @@ const NormalSignupPage: React.FC = () => {
                   </Button>
                 </div>
               </div>
+              
+              {/* New: Terms and Conditions Checkbox */}
+              
 
               <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Signing Up...' : 'Sign Up'}
@@ -191,4 +201,3 @@ const NormalSignupPage: React.FC = () => {
 };
 
 export default NormalSignupPage;
-  

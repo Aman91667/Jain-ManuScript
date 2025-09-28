@@ -1,36 +1,41 @@
 const User = require('../models/User');
+const Manuscript = require('../models/Manuscript');
 
-exports.getPendingResearchers = async (req, res) => {
+// --- Get profile ---
+exports.getProfile = async (req, res) => {
   try {
-    const pendingUsers = await User.find({ role: 'user', isApproved: false });
-    res.json(pendingUsers);
+    if (!req.user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json({ user: req.user }); // <-- wrap in { user } for frontend
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch pending researchers' });
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-exports.approveResearcher = async (req, res) => {
+// --- Update profile ---
+exports.updateProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!req.user) return res.status(404).json({ message: "User not found" });
 
-    user.role = 'researcher';
-    user.isApproved = true;
-    await user.save();
+    const updates = req.body;
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-password');
 
-    res.json({ message: 'Researcher approved successfully', user });
+    res.status(200).json({ user: updatedUser });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Update failed' });
   }
 };
 
-exports.rejectResearcher = async (req, res) => {
+// --- Get user's manuscripts ---
+exports.getMyManuscripts = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!req.user) return res.status(404).json({ message: "User not found" });
 
-    res.json({ message: 'Researcher application rejected and user deleted' });
+    const manuscripts = await Manuscript.find({ uploadedBy: req.user._id });
+    res.status(200).json({ manuscripts });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch manuscripts' });
   }
 };

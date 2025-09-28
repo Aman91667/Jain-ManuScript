@@ -1,13 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { submitHelpRequest, requestAccess } = require('../controllers/helpController');
-const { protect } = require('../middlewares/authMiddleware'); // ✅ named import
-const roleMiddleware = require('../middlewares/roleMiddleware');
 
-// ---------------------
-// Help routes
-// ---------------------
-router.post('/request-access', protect, roleMiddleware(['researcher']), requestAccess);
-router.post('/request', protect, submitHelpRequest);
+router.get('/faq', (req, res) => {
+  res.json([
+    { question: "How to sign up?", answer: "Use /signup/user or /signup/researcher." },
+    { question: "How to apply for researcher?", answer: "Use /apply-for-researcher endpoint." }
+  ]);
+});
 
 module.exports = router;
