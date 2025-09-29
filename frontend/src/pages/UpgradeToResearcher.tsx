@@ -1,61 +1,91 @@
-// UpgradeToResearcherPage.tsx
+// src/pages/UpgradeToResearcher.tsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
-
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast'; 
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-
 import { authService } from '@/services/authService';
 
-const UpgradeToResearcherPage: React.FC = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+interface UpgradeToResearcherPageProps {
+  rejectionReason?: string;
+}
 
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [researchDescription, setResearchDescription] = useState('');
+const UpgradeToResearcherPage: React.FC<UpgradeToResearcherPageProps> = ({ rejectionReason }) => {
+  const { user, setUser } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Show spinner if user is not loaded yet
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const [phoneNumber, setPhoneNumber] = useState<string>(user.phoneNumber || '');
+  const [researchDescription, setResearchDescription] = useState<string>(user.researchDescription || '');
   const [idProofFile, setIdProofFile] = useState<File | null>(null);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setIdProofFile(e.target.files[0]);
-    }
+    if (e.target.files && e.target.files[0]) setIdProofFile(e.target.files[0]);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!phoneNumber || !researchDescription || !idProofFile) {
-      toast({ title: "Validation Error", description: "Please fill in all fields and upload your ID proof.", variant: "destructive" });
+      toast({
+        title: 'Validation Error',
+        description: 'All fields are required and ID proof must be uploaded.',
+        variant: 'destructive',
+      });
       return;
     }
 
     if (!agreeToTerms) {
-      toast({ title: "Terms Required", description: "Please agree to the Terms & Conditions.", variant: "destructive" });
+      toast({
+        title: 'Terms Required',
+        description: 'Please agree to the Terms & Conditions.',
+        variant: 'destructive',
+      });
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await authService.applyForResearcherStatus({ phoneNumber, researchDescription, idProofFile, agreeToTerms });
-
-      toast({
-        title: "Application Submitted!",
-        description: response.message || "Your request is awaiting admin approval.",
+      const response = await authService.applyForResearcherStatus({
+        phoneNumber,
+        researchDescription,
+        idProofFile,
+        agreeToTerms: true,
       });
 
+      // ✅ Update context with the latest user info
+      setUser(response.user);
+
+      toast({
+        title: 'Application Submitted',
+        description: response.message || 'Your application is pending admin approval.',
+      });
+
+      // Keep user on dashboard instead of forcing Upgrade page
       navigate('/dashboard');
     } catch (error: any) {
-      toast({ title: "Application Failed", description: error.response?.data?.message || error.message || "Unable to submit application.", variant: "destructive" });
+      toast({
+        title: 'Application Failed',
+        description: error.response?.data?.message || error.message || 'Unable to submit application.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -70,74 +100,79 @@ const UpgradeToResearcherPage: React.FC = () => {
           </div>
           <CardTitle className="font-serif text-3xl">Upgrade to Researcher</CardTitle>
           <CardDescription className="mt-2 text-sm">
-            Submit your application to become part of our research community.
+            Submit your application to join our research community.
           </CardDescription>
+          {rejectionReason && (
+            <p className="text-red-500 text-sm mt-2">
+              Your previous application was rejected: {rejectionReason}
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name & Email */}
             <div className="space-y-2">
               <Label>Full Name</Label>
-              <p className="text-sm text-muted-foreground">{user?.name}</p>
+              <p className="text-sm text-muted-foreground">{user.name}</p>
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
 
+            {/* Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">Phone Number</Label>
               <Input
                 id="phoneNumber"
-                name="phoneNumber"
                 type="tel"
-                placeholder="+91 9876543210"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+91 9876543210"
                 required
               />
             </div>
 
+            {/* Research Description */}
             <div className="space-y-2">
               <Label htmlFor="researchDescription">Research Description</Label>
               <Textarea
                 id="researchDescription"
-                name="researchDescription"
-                placeholder="Briefly describe your area of research."
                 value={researchDescription}
                 onChange={(e) => setResearchDescription(e.target.value)}
+                placeholder="Briefly describe your research."
                 required
               />
             </div>
 
+            {/* ID Proof */}
             <div className="space-y-2">
-              <Label htmlFor="idProof">ID Proof (e.g., University ID)</Label>
-              <Input
-                id="idProof"
-                name="idProof"
-                type="file"
-                onChange={handleFileChange}
-                required
-              />
+              <Label htmlFor="idProof">ID Proof</Label>
+              <Input id="idProof" type="file" onChange={handleFileChange} required />
             </div>
 
+            {/* Terms & Conditions */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="terms"
                 checked={agreeToTerms}
-                onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                onCheckedChange={(checked: boolean | 'indeterminate') =>
+                  setAgreeToTerms(Boolean(checked))
+                }
               />
               <Label htmlFor="terms" className="text-sm cursor-pointer">
                 I agree to the{' '}
-                <Link to="/terms" className="text-primary hover:text-primary/80">
+                <a href="/terms" className="text-primary hover:text-primary/80">
                   Terms & Conditions
-                </Link>
+                </a>
               </Label>
             </div>
 
+            {/* Submit Button */}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                   Submitting...
                 </>
               ) : (

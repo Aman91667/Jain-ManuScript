@@ -1,11 +1,36 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Hourglass, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { authService } from '@/services/authService';
 
 const PendingApproval: React.FC = () => {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        // Fetch latest user info from backend
+        const latestUser = await authService.getCurrentUser();
+        setUser(latestUser); // Update context
+
+        // Redirect based on status
+        if (latestUser.status === 'rejected') {
+          navigate('/upgrade-to-researcher', { state: { rejectionReason: latestUser.rejectionReason } });
+        } else if (latestUser.status === 'approved') {
+          navigate('/dashboard'); // Approved users go straight to dashboard
+        }
+        // If status is still 'pending', stay on this page
+      } catch (err) {
+        console.error('Error fetching user status:', err);
+      }
+    };
+
+    checkUserStatus();
+  }, [navigate, setUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">

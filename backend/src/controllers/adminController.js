@@ -1,103 +1,76 @@
-const Manuscript = require('../models/Manuscript');
+const User = require('../models/User');
 const Researcher = require('../models/Researcher');
-const User = require('../models/User'); // Essential import
-const AccessRequest = require('../models/AccessRequest');
 
-/**
- * Get all researcher access requests (ADMIN ONLY)
- */
-exports.getAllAccessRequests = async (req, res) => {
-    try {
-        // Defensive security check
-        if (req.user.role !== 'admin') { 
-            return res.status(403).json({ message: "Admin access required" });
-        }
-        
-        const requests = await AccessRequest.find()
-            .populate('userId', 'name email')
-            .populate('manuscriptId', 'title');
-        res.status(200).json(requests);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Failed to fetch requests' });
-    }
-};
-
-/**
- * Get all users awaiting researcher approval (Admin view)
- */
-/**
- * Get all users awaiting researcher approval (Admin view)
- */
+// --- Fetch pending researchers ---
 exports.getResearcherRequests = async (req, res) => {
   try {
-    // Only fetch researchers whose status is 'pending'
     const requests = await User.find({ role: 'researcher', status: 'pending' }).select('-password');
     res.status(200).json(requests);
-  } catch (error) {
-    console.error("Error in getResearcherRequests:", error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: 'Server error fetching researcher requests' });
   }
 };
 
-
-/**
- * Approve or reject researcher (Updates User status and Researcher application record)
- */
+// --- Approve researcher ---
+// --- Approve researcher ---
 exports.approveResearcher = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { isApproved } = req.body; // true = approve, false = reject
-
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        if (user.role !== 'researcher')
-            return res.status(400).json({ message: 'User is not a researcher' });
-
-        // Update User Status (The source of truth for authorization checks)
-        user.isApproved = isApproved;
-        await user.save();
-
-        // Optional: Update the Researcher application entry for record keeping
-        const researcher = await Researcher.findOne({ userId });
-        if (researcher) {
-            researcher.isApproved = isApproved;
-            await researcher.save();
-        }
-
-        res.status(200).json({ message: `Researcher ${isApproved ? 'approved' : 'rejected'}`, user });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error updating researcher status' });
-    }
-};
-// adminController.js
-exports.rejectResearcher = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role !== 'researcher') return res.status(400).json({ message: 'User is not a researcher' });
 
-    if (user.role !== 'researcher')
-      return res.status(400).json({ message: 'User is not a researcher' });
-
-    // Update status to rejected
-    user.isApproved = false;
-    user.status = 'rejected';
+    user.isApproved = true;
+    user.status = 'approved';
+    user.rejected = false;
+    user.rejectionReason = undefined;
     await user.save();
 
-    // Update Researcher record if exists
+    const researcher = await Researcher.findOne({ userId });
+    if (researcher) {
+      researcher.isApproved = true;
+      await researcher.save();
+    }
+
+    res.status(200).json({
+      message: 'Researcher approved successfully',
+      user
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error approving researcher' });
+  }
+};
+
+// --- Reject researcher ---
+exports.rejectResearcher = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { rejectionReason } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role !== 'researcher') return res.status(400).json({ message: 'User is not a researcher' });
+
+    user.isApproved = false;
+    user.status = 'rejected';
+    user.rejected = true;
+    user.rejectionReason = rejectionReason || 'No reason provided';
+    await user.save();
+
     const researcher = await Researcher.findOne({ userId });
     if (researcher) {
       researcher.isApproved = false;
       await researcher.save();
     }
 
-    res.status(200).json({ message: 'Researcher application rejected.' });
+    // ✅ Return updated user along with message
+    res.status(200).json({ message: 'Researcher rejected successfully', user });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error rejecting researcher' });
   }
 };
+

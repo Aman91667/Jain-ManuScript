@@ -1,4 +1,3 @@
-// src/services/authService.ts
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -13,22 +12,15 @@ export interface User {
   role: 'user' | 'researcher' | 'admin';
   isApproved: boolean;
   status?: 'pending' | 'approved' | 'rejected';
+  rejected?: boolean;
+  rejectionReason?: string;
   phoneNumber?: string;
   researchDescription?: string;
   idProofUrl?: string;
 }
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface SignupNormalCredentials {
-  name: string;
-  email: string;
-  password: string;
-}
-
+export interface LoginCredentials { email: string; password: string; }
+export interface SignupNormalCredentials { name: string; email: string; password: string; }
 export interface SignupResearcherCredentials {
   name: string;
   email: string;
@@ -38,17 +30,13 @@ export interface SignupResearcherCredentials {
   idProofFile: File;
   agreeToTerms: boolean;
 }
-
 export interface ApplyForResearcherCredentials {
   phoneNumber: string;
   researchDescription: string;
   idProofFile: File;
+  agreeToTerms: boolean;
 }
-
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
+export interface AuthResponse { user: User; token: string; }
 
 // --------------------
 // Axios instance
@@ -60,6 +48,14 @@ api.interceptors.request.use((config) => {
   if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// --------------------
+// Helpers
+// --------------------
+const getStoredUser = (): User | null => {
+  const userData = localStorage.getItem('userData');
+  return userData ? JSON.parse(userData) : null;
+};
 
 // --------------------
 // Auth Functions
@@ -98,17 +94,12 @@ export const authService = {
     return res.data;
   },
 
-  applyForResearcherStatus: async (credentials: {
-    phoneNumber: string;
-    researchDescription: string;
-    idProofFile: File;
-    agreeToTerms: string; // must be 'true'
-  }): Promise<{ user: User; message: string }> => {
+  applyForResearcherStatus: async (credentials: ApplyForResearcherCredentials): Promise<{ user: User; message: string }> => {
     const formData = new FormData();
     formData.append('phoneNumber', credentials.phoneNumber);
     formData.append('researchDescription', credentials.researchDescription);
     formData.append('idProofFile', credentials.idProofFile);
-    formData.append('agreeToTerms', credentials.agreeToTerms);
+    formData.append('agreeToTerms', credentials.agreeToTerms ? 'true' : 'false');
 
     const res = await api.post<{ user: User; message: string }>(
       '/api/auth/apply-for-researcher',
@@ -134,36 +125,31 @@ export const authService = {
   // Admin Functions
   // --------------------
   fetchPendingApplications: async (): Promise<User[]> => {
-    const userData = localStorage.getItem('userData');
-    if (!userData) throw new Error('Unauthorized');
-    const user: User = JSON.parse(userData);
+    const user = getStoredUser();
+    if (!user) throw new Error('Unauthorized');
     if (user.role !== 'admin') throw new Error('Only admins can view pending applications');
-
     const res = await api.get<User[]>('/api/admin/researcher/requests');
     return res.data;
   },
+approveResearcher: async (researcherId: string): Promise<{ message: string; user: User }> => {
+  const res = await api.put<{ message: string; user: User }>(`/api/admin/researcher/approve/${researcherId}`);
+  localStorage.setItem('userData', JSON.stringify(res.data.user));
+  return res.data;
+},
 
-  approveResearcher: async (researcherId: string): Promise<{ message: string }> => {
-    const userData = localStorage.getItem('userData');
-    if (!userData) throw new Error('Unauthorized');
-    const user: User = JSON.parse(userData);
-    if (user.role !== 'admin') throw new Error('Only admins can approve researchers');
+rejectResearcher: async (researcherId: string, rejectionReason: string): Promise<{ message: string; user?: User }> => {
+  const res = await api.put(`/api/admin/researcher/reject/${researcherId}`, { rejectionReason }, {
+    headers: { 'Content-Type': 'application/json' }
+  });
 
-    const res = await api.put<{ message: string }>(
-      `/api/admin/researcher/approve/${researcherId}`
-    );
-    return res.data;
-  },
+  // ✅ If the rejected researcher is the logged-in user, update local storage
+  const storedUser = getStoredUser();
+  if (storedUser && storedUser._id === researcherId) {
+    localStorage.setItem('userData', JSON.stringify(res.data.user));
+  }
 
-  rejectResearcher: async (researcherId: string): Promise<{ message: string }> => {
-    const userData = localStorage.getItem('userData');
-    if (!userData) throw new Error('Unauthorized');
-    const user: User = JSON.parse(userData);
-    if (user.role !== 'admin') throw new Error('Only admins can reject researchers');
+  return res.data;
+},
 
-    const res = await api.put<{ message: string }>(
-      `/api/admin/researcher/reject/${researcherId}` // ✅ Correct endpoint
-    );
-    return res.data;
-  },
+
 };

@@ -42,46 +42,36 @@ const BrowsePage: React.FC = () => {
     const languages = ['all', 'Sanskrit', 'Prakrit', 'Hindi', 'Gujarati', 'Tamil'];
 
     useEffect(() => {
-        const fetchManuscripts = async () => {
-            setIsLoading(true);
-            setError(null);
+    const fetchManuscripts = async () => {
+        setIsLoading(true);
+        setError(null);
 
-            try {
-                let fetchedManuscripts: Manuscript[] = [];
+        try {
+            let fetchedManuscripts: Manuscript[] = [];
 
-                // Role-based fetching logic
-                if (user?.role === 'admin') {
-                    fetchedManuscripts = await manuscriptService.getAllManuscripts();
-                } else if (user?.role === 'researcher' && user?.isApproved) {
-                    // Approved researcher gets public + researcher manuscripts
-                    const publicManuscripts = await manuscriptService.getPublicManuscripts();
-                    
-                    // Use .catch(() => []) to safely handle a 403 error if the user's token is invalid but the user object suggests they should have access
-                    const researcherManuscripts = await manuscriptService.getResearcherManuscripts().catch(() => []);
-                    
-                    // Merge public and researcher manuscripts, avoiding duplicates
-                    fetchedManuscripts = [
-                        ...publicManuscripts,
-                        ...researcherManuscripts.filter(
-                            (m) => !publicManuscripts.some((pm) => pm._id === m._id)
-                        ),
-                    ];
-                } else {
-                    // Default for normal users, unapproved researchers, or guests: only public
-                    fetchedManuscripts = await manuscriptService.getPublicManuscripts();
-                }
-
-                setManuscripts(fetchedManuscripts);
-            } catch (err: any) {
-                console.error('Error fetching manuscripts:', err);
-                setError(err.message || 'Failed to fetch manuscripts. Please check your connection and login status.');
-            } finally {
-                setIsLoading(false);
+            if (user?.role === 'admin') {
+                // Admin sees all manuscripts
+                fetchedManuscripts = await manuscriptService.getAllManuscripts();
+            } else if (user?.role === 'researcher' && user?.isApproved) {
+                // Approved researcher sees ONLY researcher manuscripts
+                fetchedManuscripts = await manuscriptService.getResearcherManuscripts();
+            } else {
+                // Default for unapproved researchers, normal users, or guests: only public
+                fetchedManuscripts = await manuscriptService.getPublicManuscripts();
             }
-        };
 
-        fetchManuscripts();
-    }, [user]); // Dependency on 'user' ensures data re-fetches on login/logout
+            setManuscripts(fetchedManuscripts);
+        } catch (err: any) {
+            console.error('Error fetching manuscripts:', err);
+            setError(err.message || 'Failed to fetch manuscripts. Please check your connection and login status.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    fetchManuscripts();
+}, [user]);
+ // Dependency on 'user' ensures data re-fetches on login/logout
 
     const filteredManuscripts = manuscripts.filter((manuscript) => {
         const title = manuscript.title?.toLowerCase() || '';

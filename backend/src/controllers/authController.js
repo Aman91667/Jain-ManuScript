@@ -162,6 +162,9 @@ exports.applyForResearcherStatus = async (req, res) => {
         agreeToTerms: true,
         role: 'researcher',
         isApproved: false,
+        rejected: false,
+        rejectionReason: '',
+        status: 'pending',
       },
       { new: true }
     );
@@ -175,4 +178,6 @@ exports.applyForResearcherStatus = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+
 

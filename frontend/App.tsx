@@ -63,7 +63,7 @@ const App = () => (
 
                   {/* Protected Routes */}
                   <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-                  <Route path="/apply-researcher" element={<PrivateRoute><UpgradeToResearcher /></PrivateRoute>} />
+                 <Route path="/upgrade-to-researcher" element={<PrivateRoute><UpgradeToResearcher /></PrivateRoute>} />
                   <Route path="/researcher/dashboard" element={<PrivateRoute requiredRole="researcher"><ResearcherDashboard /></PrivateRoute>} />
                   <Route path="/manuscript/:id" element={<PrivateRoute requiredRole="researcher"><ManuscriptDetailPage /></PrivateRoute>} />
 

@@ -1,5 +1,4 @@
 // src/contexts/AuthContext.tsx
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
 import {
@@ -12,6 +11,7 @@ import {
 
 interface AuthContextType {
     user: User | null;
+    setUser: (user: User | null) => void; // ✅ exposed setter
     login: (credentials: LoginCredentials) => Promise<void>;
     logout: () => void;
     signup: (credentials: SignupNormalCredentials | SignupResearcherCredentials) => Promise<void>;
@@ -33,8 +33,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-    
-    // 1. Helper function to get initial state from local storage
+    // --- Get initial user from localStorage
     const getInitialUser = (): User | null => {
         const userData = localStorage.getItem('userData');
         if (userData) {
@@ -50,11 +49,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null;
     };
 
-    // 🚩 FIX: Initialize state by calling getInitialUser
     const [user, setUser] = useState<User | null>(getInitialUser);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    
-    // Function to clear all session data (Helper for logout and validation failure)
+
     const clearSession = () => {
         setUser(null);
         delete axios.defaults.headers.common['Authorization'];
@@ -62,36 +59,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('userData');
     };
 
-    // 2. Set up Axios header and perform token validation check in useEffect.
+    // --- Validate token when app loads
     useEffect(() => {
         const token = localStorage.getItem('authToken');
         
         const validateSession = async () => {
             if (token) {
-                // Set the header immediately so authService can validate the token
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; 
-
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 try {
-                    // This call validates the token and fetches fresh user data
                     const currentUser = await authService.getCurrentUser();
-                    setUser(currentUser); // Update with the latest server data
+                    setUser(currentUser);
                     localStorage.setItem('userData', JSON.stringify(currentUser));
                 } catch (err) {
-                    // Token is expired, invalid, or server connection failed. Logout the user.
                     console.error("Token validation failed, logging out:", err);
                     clearSession();
                 }
             } else {
-                // No token found, clear session to be safe
-                clearSession(); 
+                clearSession();
             }
-            // Always set isLoading to false when the session check is complete
             setIsLoading(false);
         };
 
         validateSession();
-    }, []); // Run only once on mount
+    }, []);
 
+    // --- Login
     const login = async (credentials: LoginCredentials) => {
         setIsLoading(true);
         try {
@@ -105,6 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    // --- Signup
     const signup = async (credentials: SignupNormalCredentials | SignupResearcherCredentials) => {
         setIsLoading(true);
         try {
@@ -122,20 +115,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    // --- Logout
     const logout = () => {
-        authService.logout(); // Clear server session/cookie (if applicable)
-        clearSession(); // Clears local storage and state
-        setIsLoading(false); 
+        authService.logout();
+        clearSession();
+        setIsLoading(false);
     };
 
     const isAuthenticated = !!user;
-    // Use optional chaining for robustness
     const userRole = user?.role ?? 'unknown';
 
     return (
         <AuthContext.Provider
             value={{
                 user,
+                setUser, // ✅ exposed
                 login,
                 logout,
                 signup,

@@ -5,7 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Upload, File } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { authService, User } from '@/services/authService';
 
@@ -14,6 +22,9 @@ const AdminDashboard: React.FC = () => {
   const { toast } = useToast();
   const [pendingResearchers, setPendingResearchers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedResearcher, setSelectedResearcher] = useState<User | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // Fetch pending researcher applications
   const fetchPending = async () => {
@@ -38,22 +49,31 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await authService.approveResearcher(_id);
       toast({ title: 'Success!', description: response.message });
-
-      // Remove approved researcher from the table immediately
       setPendingResearchers(prev => prev.filter(r => r._id !== _id));
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
   };
 
-  // Reject researcher
-  const handleReject = async (_id: string) => {
-    try {
-      const response = await authService.rejectResearcher(_id);
-      toast({ title: 'Rejected!', description: response.message });
+  // Open reject modal
+  const openRejectModal = (researcher: User) => {
+    setSelectedResearcher(researcher);
+    setRejectionReason('');
+    setRejectDialogOpen(true);
+  };
 
-      // Remove rejected researcher from the table immediately
-      setPendingResearchers(prev => prev.filter(r => r._id !== _id));
+  // Confirm rejection
+  const handleReject = async () => {
+    if (!selectedResearcher) return;
+    if (!rejectionReason.trim()) {
+      toast({ title: 'Error', description: 'Please provide a rejection reason.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const response = await authService.rejectResearcher(selectedResearcher._id, rejectionReason);
+      toast({ title: 'Rejected!', description: response.message });
+      setPendingResearchers(prev => prev.filter(r => r._id !== selectedResearcher._id));
+      setRejectDialogOpen(false);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
@@ -125,7 +145,7 @@ const AdminDashboard: React.FC = () => {
                         <Button variant="ghost" size="sm" onClick={() => handleApprove(r._id)} className="text-green-600 hover:text-green-800 mr-2">
                           <Check className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleReject(r._id)} className="text-red-600 hover:text-red-800">
+                        <Button variant="ghost" size="sm" onClick={() => openRejectModal(r)} className="text-red-600 hover:text-red-800">
                           <X className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -151,6 +171,26 @@ const AdminDashboard: React.FC = () => {
             </Button>
           </CardHeader>
         </Card>
+
+        {/* Reject Modal */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Reject Researcher</DialogTitle>
+              <DialogDescription>Provide a reason for rejecting this application.</DialogDescription>
+            </DialogHeader>
+            <Input
+              placeholder="Enter rejection reason"
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="mt-4"
+            />
+            <div className="flex justify-end mt-4 space-x-2">
+              <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleReject}>Reject</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
