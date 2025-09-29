@@ -1,4 +1,3 @@
-// PrivateRoute.tsx
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,17 +22,24 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRole }) =
     return <Navigate to="/login" replace />;
   }
 
-  // Rejected researchers stay on dashboard (they see rejection message there)
-  if (user?.role === 'researcher' && user.status === 'rejected') {
-    return <>{children}</>;
+  // Handle researchers explicitly
+  if (user?.role === 'researcher') {
+    if (user.status === 'rejected') {
+      return (
+        <Navigate
+          to="/dashboard"
+          replace
+          state={{ rejectionReason: user.rejectionReason }}
+        />
+      );
+    }
+
+    if (!user.isApproved) {
+      return <Navigate to="/pending-approval" replace />;
+    }
   }
 
-  // Pending researchers are redirected to pending-approval page
-  if (user?.role === 'researcher' && !user.isApproved && user.status !== 'rejected') {
-    return <Navigate to="/pending-approval" replace />;
-  }
-
-  // Role-based access
+  // Role check for other routes
   if (requiredRole && user?.role !== requiredRole) {
     return <Navigate to="/dashboard" replace />;
   }

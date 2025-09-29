@@ -6,37 +6,46 @@ import { Badge } from '@/components/ui/badge';
 import ManuscriptModal from '@/components/manuscript/ManuscriptModal';
 import { BookOpen, Heart, Users, Scroll, ArrowRight, Star } from 'lucide-react';
 import heroImage from '@/assets/hero-manuscripts.jpg';
+import kalpaSutraThumb from '@/assets/kalpa-sutra.png'; // Adjust path based on exact file structure
+import acharangaSutraThumb from '@/assets/achranga-sutra.png'; 
+import tattvarthaSutraThumb from '@/assets/tattvartha-sutra.png'; 
+
 
 const HomePage: React.FC = () => {
   const [selectedManuscript, setSelectedManuscript] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Mock featured manuscripts
-  const featuredManuscripts = [
-    {
-      id: '1',
-      title: 'Kalpa Sutra',
-      author: 'Acharya Bhadrabahu',
-      category: 'Philosophy',
-      thumbnail: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400',
-      language: 'Sanskrit'
-    },
-    {
-      id: '2',
-      title: 'Acharanga Sutra',
-      author: 'Lord Mahavira',
-      category: 'Scripture',
-      thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400',
-      language: 'Prakrit'
-    },
-    {
-      id: '3',
-      title: 'Tattvartha Sutra',
-      author: 'Umaswami',
-      category: 'Philosophy',
-      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-      language: 'Sanskrit'
-    }
-  ];
+const featuredManuscripts = [
+  {
+    id: '1',
+    title: 'ज्वर त्रिशंति',
+    author: 'ज्वर त्रिशंति',
+    category: 'Philosophy',
+    // Use the imported variable
+    thumbnail: kalpaSutraThumb, 
+    language: 'Sanskrit'
+  },
+  {
+    id: '2',
+    title: 'आचारांग सूत्र',
+    author: 'भगवान महावीर',
+    category: 'Scripture',
+    // Use the imported variable
+    thumbnail: acharangaSutraThumb, 
+    language: 'Prakrit'
+  },
+  {
+    id: '3',
+    title: 'पथ्यापथ्य',
+    author: 'पथ्यापथ्य ',
+    category: 'Philosophy',
+    // Use the imported variable
+    thumbnail: tattvarthaSutraThumb, 
+    language: 'Sanskrit'
+  }
+];
+
+// ... rest of your code that uses featuredManuscripts
 
   const bentoCards = [
     {
@@ -202,12 +211,7 @@ const HomePage: React.FC = () => {
                     <Badge variant="outline" className="text-xs">
                       {manuscript.language}
                     </Badge>
-                    <Button variant="manuscript" size="sm" onClick={(e) => {
-                      e.stopPropagation();
-                      handleCardClick(manuscript);
-                    }}>
-                      View Details
-                    </Button>
+          
                   </div>
                 </CardContent>
               </Card>

@@ -63,12 +63,15 @@ const isFileImage = (fileName: string): boolean => {
 };
 
 const getAbsoluteFileUrl = (filePath: string): string => {
+    // Added a null/undefined check before attempting replace
+    if (!filePath) return '#'; 
     const cleanPath = filePath.replace(/^\/+/, '');
     return `${FILE_BASE_URL}/${cleanPath}`;
 };
 
 // Error SVG (Using Tailwind's semantic 'destructive' color)
-const FileTextSvg = `<svg class="lucide-file-text h-4 w-4 text-destructive" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><line x1="10" x2="14" y1="12" y2="12"></line><line x1="10" x2="14" y1="16" y2="16"></line></svg>`;
+// NOTE: This constant is unused in the new structure since we use the Lucide icon directly.
+// const FileTextSvg = `<svg class="lucide-file-text h-4 w-4 text-destructive" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><line x1="10" x2="14" y1="12" y2="12"></line><line x1="10" x2="14" y1="16" y2="16"></line></svg>`;
 
 
 const ManuscriptDetailPage: React.FC = () => {
@@ -128,14 +131,14 @@ const ManuscriptDetailPage: React.FC = () => {
             target.style.display = 'none'; 
             // Using semantic colors for error text/container
             container.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full p-12 text-center text-destructive">
-                <FileText className="h-10 w-10 mb-2" /> 
+                <svg class="lucide-file-text h-10 w-10 mb-2" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><line x1="10" x2="14" y1="12" y2="12"></line><line x1="10" x2="14" y1="16" y2="16"></line></svg>
                 <p class="font-semibold">Image Failed to Load</p>
                 <p class="text-sm text-muted-foreground">The file exists but could not be accessed. Check server logs.</p>
             </div>`;
         }
     };
 
-
+    // --- CRITICAL SAFEGUARDS ---
     if (isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background">
@@ -165,6 +168,10 @@ const ManuscriptDetailPage: React.FC = () => {
             </div>
         );
     }
+    
+    // Calculate current file path safely for the Popover link
+    const currentFilePath = manuscript.files[activeImageIndex];
+    const canViewFullImage = currentFilePath && isFileImage(currentFilePath);
 
     return (
         // Main page background: bg-background (Set to deep black/darkest gray in config)
@@ -208,11 +215,20 @@ const ManuscriptDetailPage: React.FC = () => {
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-2 bg-popover border-border">
                                 <div className="space-y-1">
-                                    <Button asChild variant="ghost" className="w-full justify-start text-popover-foreground hover:bg-accent">
+                                    {/* FIX APPLIED HERE: Conditionally render the link and disable if no image is present */}
+                                    <Button 
+                                        asChild 
+                                        variant="ghost" 
+                                        className="w-full justify-start text-popover-foreground hover:bg-accent"
+                                        disabled={!canViewFullImage}
+                                    >
                                         <a
-                                            href={getAbsoluteFileUrl(manuscript.files[activeImageIndex])}
+                                            href={canViewFullImage ? getAbsoluteFileUrl(currentFilePath) : '#'}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            onClick={(e) => {
+                                                if (!canViewFullImage) e.preventDefault();
+                                            }}
                                         >
                                             <ExternalLink className="mr-2 h-4 w-4" />
                                             View Full Image
@@ -332,7 +348,10 @@ const ManuscriptDetailPage: React.FC = () => {
                                                         const container = target.parentElement;
                                                         if (container) {
                                                             target.style.display = 'none';
-                                                            container.innerHTML = `<div class="h-full w-full flex items-center justify-center bg-accent">${FileTextSvg}</div>`;
+                                                            // Using inline SVG string for thumbnail error state
+                                                            container.innerHTML = `<div class="h-full w-full flex items-center justify-center bg-accent">
+                                                                <svg class="lucide-file-text h-4 w-4 text-destructive" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><line x1="10" x2="14" y1="12" y2="12"></line><line x1="10" x2="14" y1="16" y2="16"></line></svg>
+                                                            </div>`;
                                                         }
                                                     }}
                                                 />
@@ -424,7 +443,6 @@ const ManuscriptDetailPage: React.FC = () => {
                     {/* Sidebar: Only renders when showMetadata is true */}
                     {showMetadata && (
                         <div
-                            // CRITICAL CHANGE: Removed the unnecessary conditional class here
                             className={'space-y-6 transition-all duration-300 md:col-span-4 lg:col-span-3'} 
                         >
                             <div className="sticky top-24 space-y-6">
