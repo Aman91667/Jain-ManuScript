@@ -37,7 +37,7 @@ const Navbar: React.FC = () => {
               className="h-8 w-8 ahimsa-hand"
             />
             <span className="font-serif text-xl font-semibold text-foreground">
-              Jain Manuscripts
+               SHRUT GYAN KOSH
             </span>
           </Link>
 

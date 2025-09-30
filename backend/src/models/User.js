@@ -11,13 +11,13 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'researcher', 'admin'],
       default: 'user',
     },
-    isApproved: { type: Boolean, default: false }, // still useful for quick checks
+    isApproved: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
     },
-    rejectionReason: { type: String, default: '' }, // ✅ NEW FIELD
+    rejectionReason: { type: String, default: '' },
     phoneNumber: String,
     researchDescription: String,
     idProofUrl: String,
@@ -25,6 +25,9 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Keep only non-duplicate indexes
+userSchema.index({ role: 1, status: 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {

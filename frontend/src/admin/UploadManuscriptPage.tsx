@@ -32,7 +32,6 @@ const UploadManuscriptPage: React.FC = () => {
 
   if (!user) return <div>Loading...</div>;
 
-  // Only admins can access this page
   if (user.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -59,6 +58,12 @@ const UploadManuscriptPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.title) {
+      toast({ title: 'Error', description: 'Title is required.', variant: 'destructive' });
+      return;
+    }
+
     if (files.length === 0) {
       toast({ title: 'Error', description: 'Please select at least one file.', variant: 'destructive' });
       return;
@@ -67,17 +72,25 @@ const UploadManuscriptPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const token = localStorage.getItem('authToken'); // 🔑 Ensure token is in localStorage
+      const token = localStorage.getItem('authToken');
       if (!token) throw new Error('User not authenticated');
 
-      const endpoint = 'http://localhost:4000/api/manuscripts/';
-      const formDataToSend = new FormData();
+      const apiUrl = 'http://localhost:4000/api/manuscripts/';
+      const form = new FormData();
 
-      Object.entries(formData).forEach(([key, value]) => formDataToSend.append(key, value));
-      formDataToSend.append('uploadType', uploadType);
-      files.forEach(file => formDataToSend.append('files', file));
+      // Append form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value) form.append(key, value);
+      });
 
-      await axios.post(endpoint, formDataToSend, {
+      // Append upload type and visibility automatically
+      form.append('uploadType', uploadType);
+      form.append('visibility', uploadType === 'detailed' ? 'researcher' : 'public');
+
+      // Append files
+      files.forEach(file => form.append('files', file));
+
+      await axios.post(apiUrl, form, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -85,14 +98,12 @@ const UploadManuscriptPage: React.FC = () => {
       });
 
       toast({ title: 'Success', description: 'Manuscript uploaded successfully.' });
-
       setFiles([]);
       setFormData({ title: '', description: '', category: '', language: '', period: '', author: '', keywords: '' });
       setUploadType('normal');
-      navigate('/admin');
-
+      navigate('/admin/dashboard');
     } catch (error: any) {
-      console.error('Failed to upload manuscript:', error);
+      console.error('Upload failed:', error);
       toast({ title: 'Error', description: error?.response?.data?.message || error.message, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
@@ -102,14 +113,14 @@ const UploadManuscriptPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <Button variant="ghost" onClick={() => navigate('/admin')} className="mb-4">
+        <Button variant="ghost" onClick={() => navigate('/admin/dashboard')} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Admin Dashboard
         </Button>
 
         <h1 className="font-serif text-3xl md:text-4xl font-bold mb-2">Upload Manuscript</h1>
         <p className="text-muted-foreground text-lg">Add new manuscripts to the collection</p>
 
-        {/* Upload Type Selection */}
+        {/* Upload Type */}
         <Card className="my-6">
           <CardHeader>
             <CardTitle className="font-serif text-xl">Select Upload Type</CardTitle>
@@ -131,11 +142,11 @@ const UploadManuscriptPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Upload Form */}
+        {/* Form */}
         <Card>
           <CardHeader>
             <CardTitle className="font-serif text-xl">{uploadType === 'normal' ? 'Normal' : 'Detailed'} Manuscript Upload</CardTitle>
-            <CardDescription>Fill in the manuscript details and upload files</CardDescription>
+            <CardDescription>Fill in details and upload files</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -200,7 +211,7 @@ const UploadManuscriptPage: React.FC = () => {
                 <Button type="submit" className="flex-1" disabled={isSubmitting}>
                   <Upload className="h-4 w-4 mr-2" /> {isSubmitting ? 'Uploading...' : 'Upload Manuscript'}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => navigate('/admin')}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => navigate('/admin/dashboard')}>Cancel</Button>
               </div>
             </form>
           </CardContent>

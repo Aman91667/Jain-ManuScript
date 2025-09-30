@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { authService, User } from '@/services/authService';
 
+const BASE_URL = 'http://localhost:4000/'; // Backend base URL
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -103,56 +105,73 @@ const AdminDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             {pendingResearchers.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>ID Proof</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingResearchers.map((r) => (
-                    <TableRow key={r._id}>
-                      <TableCell>{r.name}</TableCell>
-                      <TableCell>{r.phoneNumber}</TableCell>
-                      <TableCell className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">{r.researchDescription}</TableCell>
-                      <TableCell>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <File className="h-4 w-4 mr-2" /> View File
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                              <DialogTitle>ID Proof</DialogTitle>
-                              <DialogDescription>View the uploaded ID proof.</DialogDescription>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                              {r.idProofUrl ? (
-                                <img src={`http://localhost:4000/${r.idProofUrl}`} alt="ID Proof" className="max-w-full h-auto" />
-                              ) : (
-                                <p>No ID Proof uploaded.</p>
-                              )}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleApprove(r._id)} className="text-green-600 hover:text-green-800 mr-2">
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => openRejectModal(r)} className="text-red-600 hover:text-red-800">
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+             <Table className="min-w-full table-auto border-collapse">
+  <TableHeader>
+    <TableRow>
+      <TableHead className="text-left">Name</TableHead>
+      <TableHead className="text-left">Phone</TableHead>
+      <TableHead className="text-left">Description</TableHead>
+      <TableHead className="text-center">ID Proof</TableHead>
+      <TableHead className="text-right">Actions</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {pendingResearchers.map((r) => (
+      <TableRow key={r._id} className="align-middle">
+        <TableCell className="text-left">{r.name}</TableCell>
+        <TableCell className="text-left">{r.phoneNumber}</TableCell>
+        <TableCell className="text-left max-w-xs truncate">{r.researchDescription}</TableCell>
+        <TableCell className="text-center">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center justify-center">
+                <File className="h-4 w-4 mr-1" /> View
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>ID Proof</DialogTitle>
+                <DialogDescription>View the uploaded ID proof.</DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                {r.idProofUrl ? (
+                  <img
+                    src={`${BASE_URL}${r.idProofUrl.replace(/^\/+/, '')}`}
+                    alt="ID Proof"
+                    className="max-w-full h-auto rounded-md"
+                  />
+                ) : (
+                  <p className="text-center text-muted-foreground">No ID Proof uploaded.</p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </TableCell>
+        <TableCell className="text-right">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleApprove(r._id)}
+              className="text-green-600 hover:text-green-800"
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openRejectModal(r)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+
             ) : (
               <p className="text-muted-foreground text-center">No new applications at this time.</p>
             )}

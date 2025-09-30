@@ -1,175 +1,207 @@
 const Manuscript = require("../models/Manuscript");
-// const User = require('../models/User'); // Assume User model is required if not explicitly imported
+const logger = require('../config/logger');
 
-/**
- * Get all public manuscripts
- * Anyone logged in can access
- */
+// -----------------------------
+// Public manuscripts - normal users
+// -----------------------------
 exports.getPublicManuscripts = async (req, res) => {
-    try {
-        const manuscripts = await Manuscript.find({ visibility: "public" }).sort({ createdAt: -1 });
-        res.json(manuscripts);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-    }
+  try {
+    // Only return normal manuscripts for public users
+    const manuscripts = await Manuscript.find({ 
+      visibility: "public",
+      uploadType: "normal"  // only normal uploads
+    })
+    .sort({ createdAt: -1 })
+    .select('-__v');
+    
+    res.json(manuscripts);
+  } catch (err) {
+    logger.error('Error fetching public manuscripts:', err);
+    res.status(500).json({ message: "Server error fetching manuscripts" });
+  }
 };
 
-/**
- * Get researcher manuscripts (only for approved researchers)
- */
+// -----------------------------
+// Researcher manuscripts - approved researchers only
+// -----------------------------
 exports.getResearcherManuscripts = async (req, res) => {
-    try {
-        // Authorization is handled on the route, but a defensive check remains:
-        if (req.user.role !== "researcher" || !req.user.isApproved) {
-            return res.status(403).json({
-                message: "Access denied. Only approved researchers can view this content."
-            });
-        }
-
-        const manuscripts = await Manuscript.find({ visibility: "researcher" }).sort({ createdAt: -1 });
-        res.json(manuscripts);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+  try {
+    // Only approved researchers can access
+    if (req.user.role !== "researcher" || !req.user.isApproved) {
+      return res.status(403).json({
+        message: "Access denied. Only approved researchers can view this content."
+      });
     }
+
+    // Return only detailed manuscripts
+    const manuscripts = await Manuscript.find({
+      uploadType: "detailed",
+      visibility: "researcher" // Only manuscripts meant for researchers
+    })
+    .sort({ createdAt: -1 })
+    .select('-__v');
+    
+    res.json(manuscripts);
+  } catch (err) {
+    logger.error('Error fetching researcher manuscripts:', err);
+    res.status(500).json({ message: "Server error fetching manuscripts" });
+  }
 };
 
-/**
- * Get all manuscripts (admin only)
- */
+// -----------------------------
+// Admin manuscripts - all manuscripts
+// -----------------------------
 exports.getAllManuscripts = async (req, res) => {
-    try {
-        // Authorization is handled on the route, but a defensive check remains:
-        if (req.user.role !== "admin") {
-            return res.status(403).json({ message: "Access denied. Admins only." });
-        }
-
-        const manuscripts = await Manuscript.find({}).sort({ createdAt: -1 });
-        res.json(manuscripts);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Admins only." });
     }
+
+    const manuscripts = await Manuscript.find({})
+      .sort({ createdAt: -1 })
+      .select('-__v');
+    
+    res.json(manuscripts);
+  } catch (err) {
+    logger.error('Error fetching all manuscripts:', err);
+    res.status(500).json({ message: "Server error fetching manuscripts" });
+  }
 };
 
-/**
- * Get manuscript by ID
- */
+// -----------------------------
+// Get manuscript by ID
+// -----------------------------
 exports.getManuscriptById = async (req, res) => {
-    try {
-        const manuscript = await Manuscript.findById(req.params.id);
-        if (!manuscript) {
-            return res.status(404).json({ message: "Manuscript not found" });
-        }
-
-        // Allow Admin to view anything
-        if (req.user.role === 'admin') {
-            return res.json(manuscript);
-        }
-
-        // Restrict researcher-only manuscripts
-        if (manuscript.visibility === "researcher") {
-            if (req.user.role !== "researcher" || !req.user.isApproved) {
-                return res.status(403).json({
-                    message: "Access denied. Researcher-only manuscript."
-                });
-            }
-        }
-        
-        res.json(manuscript);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: err.message });
+  try {
+    const manuscript = await Manuscript.findById(req.params.id).select('-__v');
+    
+    if (!manuscript) {
+      return res.status(404).json({ message: "Manuscript not found" });
     }
+
+    // Admin can view anything
+    if (req.user.role === 'admin') {
+      return res.json(manuscript);
+    }
+
+    // Restrict researcher-only manuscripts
+    if (manuscript.visibility === "researcher" && !req.user.isApproved) {
+      return res.status(403).json({
+        message: "Access denied. This is a researcher-only manuscript."
+      });
+    }
+
+    // Restrict normal users from seeing detailed manuscripts
+    if (req.user.role !== "researcher" && manuscript.uploadType === "detailed") {
+      return res.status(403).json({
+        message: "Access denied. Detailed manuscripts are for approved researchers only."
+      });
+    }
+    
+    res.json(manuscript);
+  } catch (err) {
+    logger.error('Error fetching manuscript by ID:', err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
-/**
- * Upload Manuscript - ADMINS ONLY
- */
+// -----------------------------
+// Upload manuscript - admins only
+// -----------------------------
 exports.uploadManuscript = async (req, res) => {
-    try {
-        // CRITICAL FIX: Only allow users with the 'admin' role to proceed.
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: "Access denied. Only administrators can upload manuscripts." });
-        }
-
-        const { title, description, category, visibility, language, period, author, keywords, uploadType } = req.body;
-        const files = req.files ? req.files.map(file => `uploads/${file.filename}`) : [];
-
-        const manuscript = new Manuscript({
-            title, description, category, visibility, language, period, author, uploadType, files,
-            keywords: keywords ? keywords.split(',') : [],
-            uploadedBy: req.user._id 
-        });
-
-        await manuscript.save();
-        res.status(201).json({ manuscript, message: 'Manuscript uploaded successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Upload failed' });
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        message: "Access denied. Only administrators can upload manuscripts." 
+      });
     }
+
+    const { title, description, category, visibility, language, period, author, keywords, uploadType } = req.body;
+    const files = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+
+    if (!title) return res.status(400).json({ message: 'Title is required' });
+    if (files.length === 0) return res.status(400).json({ message: 'At least one file is required' });
+
+    const manuscript = new Manuscript({
+      title,
+      description,
+      category,
+      visibility: visibility || 'public',
+      language,
+      period,
+      author,
+      uploadType: uploadType || 'normal',
+      files,
+      keywords: keywords ? keywords.split(',').map(k => k.trim()) : [],
+      uploadedBy: req.user._id
+    });
+
+    await manuscript.save();
+    logger.info(`New manuscript uploaded: ${manuscript.title} by ${req.user.email}`);
+    res.status(201).json({ manuscript, message: 'Manuscript uploaded successfully' });
+  } catch (err) {
+    logger.error('Error uploading manuscript:', err);
+    res.status(500).json({ message: 'Upload failed' });
+  }
 };
 
-/**
- * Update Manuscript - Owner or Admin
- */
+// -----------------------------
+// Update manuscript - owner or admin
+// -----------------------------
 exports.updateManuscript = async (req, res) => {
-    try {
-        const manuscript = await Manuscript.findById(req.params.id);
-        if (!manuscript) return res.status(404).json({ message: 'Manuscript not found' });
+  try {
+    const manuscript = await Manuscript.findById(req.params.id);
+    if (!manuscript) return res.status(404).json({ message: 'Manuscript not found' });
 
-        // Authorization Check: Only the owner or an admin can update
-        const isOwner = manuscript.uploadedBy.equals(req.user._id);
-        const isAdmin = req.user.role === 'admin';
+    const isOwner = manuscript.uploadedBy.equals(req.user._id);
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: 'Access denied. Owner or admin only.' });
 
-        if (!isOwner && !isAdmin) {
-            return res.status(403).json({ message: 'Access denied. You must be the owner or an admin to update.' });
-        }
+    // Update allowed fields
+    const allowedUpdates = ['title', 'description', 'category', 'visibility', 'language', 'period', 'author', 'uploadType'];
+    allowedUpdates.forEach(field => {
+      if (req.body[field] !== undefined) manuscript[field] = req.body[field];
+    });
 
-        Object.assign(manuscript, req.body);
+    // Update keywords
+    if (req.body.keywords) manuscript.keywords = req.body.keywords.split(',').map(k => k.trim());
 
-        if (req.files && req.files.length > 0) {
-            req.files.forEach(file => manuscript.files.push(`uploads/${file.filename}`));
-        }
-
-        await manuscript.save();
-        res.status(200).json({ manuscript, message: 'Updated successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Update failed' });
+    // Update files
+    if (req.body.existingFiles) {
+      try { manuscript.files = JSON.parse(req.body.existingFiles); } 
+      catch (e) { logger.error('Error parsing existingFiles:', e); }
     }
+    if (req.files && req.files.length > 0) {
+      const newFiles = req.files.map(file => `/uploads/${file.filename}`);
+      manuscript.files = [...manuscript.files, ...newFiles];
+    }
+
+    await manuscript.save();
+    logger.info(`Manuscript updated: ${manuscript.title} by ${req.user.email}`);
+    res.status(200).json({ data: manuscript, message: 'Manuscript updated successfully' });
+  } catch (err) {
+    logger.error('Error updating manuscript:', err);
+    res.status(500).json({ message: 'Update failed' });
+  }
 };
 
-/**
- * Delete Manuscript - Owner or Admin
- */
+// -----------------------------
+// Delete manuscript - owner or admin
+// -----------------------------
 exports.deleteManuscript = async (req, res) => {
-    try {
-        console.log("Delete Request ID:", req.params.id);
-        console.log("Request User:", req.user._id, "Role:", req.user.role);
+  try {
+    const manuscript = await Manuscript.findById(req.params.id);
+    if (!manuscript) return res.status(404).json({ message: 'Manuscript not found' });
 
-        const manuscript = await Manuscript.findById(req.params.id);
+    const isOwner = manuscript.uploadedBy.equals(req.user._id);
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: 'Access denied. Owner or admin only.' });
 
-        if (!manuscript) {
-            console.log("Manuscript not found in DB");
-            return res.status(404).json({ message: 'Manuscript not found' });
-        }
-
-        // Authorization Check: Only the owner or an admin can delete
-        const isOwner = manuscript.uploadedBy.equals(req.user._id);
-        const isAdmin = req.user.role === 'admin';
-
-        if (!isOwner && !isAdmin) {
-            console.log("Unauthorized delete attempt");
-            return res.status(403).json({ message: 'Access denied. You must be the owner or an admin to delete.' });
-        }
-
-        await Manuscript.findByIdAndDelete(req.params.id);
-        console.log("Manuscript deleted successfully:", req.params.id);
-        res.status(200).json({ message: 'Deleted successfully' });
-    } catch (err) {
-        console.error("Delete Manuscript Error:", err);
-        res.status(500).json({ message: 'Delete failed', error: err.message });
-    }
+    await Manuscript.findByIdAndDelete(req.params.id);
+    logger.info(`Manuscript deleted: ${manuscript.title} by ${req.user.email}`);
+    res.status(200).json({ message: 'Manuscript deleted successfully' });
+  } catch (err) {
+    logger.error('Error deleting manuscript:', err);
+    res.status(500).json({ message: 'Delete failed', error: err.message });
+  }
 };

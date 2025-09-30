@@ -21,7 +21,6 @@ const UpgradeToResearcherPage: React.FC<UpgradeToResearcherPageProps> = ({ rejec
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Show spinner if user is not loaded yet
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -70,15 +69,14 @@ const UpgradeToResearcherPage: React.FC<UpgradeToResearcherPageProps> = ({ rejec
         agreeToTerms: true,
       });
 
-      // ✅ Update context with the latest user info
+      // Update context with latest user info including new status
       setUser(response.user);
 
       toast({
         title: 'Application Submitted',
-        description: response.message || 'Your application is pending admin approval.',
+        description: response.message || 'Your application is now pending admin approval.',
       });
 
-      // Keep user on dashboard instead of forcing Upgrade page
       navigate('/dashboard');
     } catch (error: any) {
       toast({
@@ -102,7 +100,9 @@ const UpgradeToResearcherPage: React.FC<UpgradeToResearcherPageProps> = ({ rejec
           <CardDescription className="mt-2 text-sm">
             Submit your application to join our research community.
           </CardDescription>
-          {rejectionReason && (
+
+          {/* Show rejection reason only if status is 'rejected' */}
+          {user.status === 'rejected' && rejectionReason && (
             <p className="text-red-500 text-sm mt-2">
               Your previous application was rejected: {rejectionReason}
             </p>

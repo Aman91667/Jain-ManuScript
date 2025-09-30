@@ -9,6 +9,12 @@ import kalpaSutraThumb from '@/assets/kalpa-sutra.png';
 import acharangaSutraThumb from '@/assets/achranga-sutra.png'; 
 import tattvarthaSutraThumb from '@/assets/tattvartha-sutra.png'; 
 
+// Supporter Images
+import hathkargaImage from '@/assets/supporters/hathkargha.webp';
+import shantiDharaImage from '@/assets/supporters/shanti-dhara.webp';
+import aashishJainImage from '@/assets/supporters/aashish-jain.webp';
+import arhamDhyanYogaImage from '@/assets/supporters/अर्हं ध्यान योग.png';
+
 const HomePage: React.FC = () => {
   const [selectedManuscript, setSelectedManuscript] = useState<any>(null);
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
@@ -23,14 +29,30 @@ const HomePage: React.FC = () => {
 
   const bentoCards = [
     {
-      title: language === 'en' ? 'Jain History' : 'जैन इतिहास',
-      description: language === 'en'
-        ? 'Explore 2,500 years of Jain heritage and the lives of 24 Tirthankaras'
-        : '2,500 वर्षों की जैन विरासत और 24 तीर्थंकरों के जीवन की गाथा का अन्वेषण करें',
-      icon: <Scroll className="h-8 w-8" />,
-      className: 'md:col-span-2 md:row-span-2',
-      gradient: 'bg-gradient-saffron'
-    },
+  title: language === 'en' ? 'Manuscript Preservation – A Spiritual Vow' : 'पांडुलिपि संरक्षण – एक आध्यात्मिक संकल्प',
+  description: language === 'en'
+    ? `“This heritage of knowledge is not just words on paper, but nectar that illuminates the soul.”
+
+The Indian Acharya tradition has always been a priceless repository of knowledge, penance, and culture. The life of Acharya Shri Vidyasagar Ji Maharaj is an unparalleled story of penance, sacrifice, and public welfare. Inspired by him, innumerable welfare activities continue in various fields.
+
+The Acharya’s literary endeavors give us guidance today through immortal works like Mookmati, Swapnil, and Anubhuti. His teachings indicate that ancient Jain Acharyas conducted deep research not only in religion, but also in Ayurveda, philosophy, logic, grammar, and literature, creating invaluable classical texts.
+
+From these sacred inspirations, we have initiated the divine work of manuscript preservation and publication. Our resolve is not just to safeguard these texts, but also to transmit the knowledge, science, and culture contained within to future generations. This effort is not only preservation, but also a spiritual practice and an unwavering vow to protect culture.
+
+Currently, Acharya Shri Samaysagar Ji Maharaj guides us on this sacred path with his divine grace, while Shri 108 Pranamy Sagar Ji, the proponent of Arham Yoga, provided initial support to this holy initiative.`
+    : `“ज्ञान की यह धरोहर केवल कागज़ पर अंकित शब्द नहीं, अपितु आत्मा को आलोकित करने वाला अमृत है।”
+
+भारतीय आचार्य परंपरा सदैव से ज्ञान, तप और संस्कृति की अमूल्य निधि रही है। आचार्य श्री विद्यासागर जी महाराज का जीवन तप, त्याग और लोककल्याण की अनुपम गाथा है। उनकी प्रेरणा से असंख्य क्षेत्रों में जनकल्याणकारी कार्य सतत् संपन्न हो रहे हैं।
+
+आचार्य श्री की साहित्य साधना मूकमाटी, स्वप्नील, अनुभूति जैसे अमर ग्रंथों के रूप में आज भी हमें मार्गदर्शन देती है। उनके वचनों में स्पष्ट संकेत मिलता है कि प्राचीन जैन आचार्यों ने केवल धर्म ही नहीं, अपितु आयुर्वेद, दर्शन, न्याय, व्याकरण और साहित्य जैसे विषयों पर गहन अनुसंधान कर अमूल्य शास्त्रीय ग्रंथों की रचना की।
+
+इन्हीं पावन प्रेरणाओं से हमने पांडुलिपि संरक्षण एवं प्रकाशन का दिव्य कार्य प्रारंभ किया है। हमारा संकल्प मात्र इन ग्रंथों को सुरक्षित रखना ही नहीं, बल्कि उनमें निहित विज्ञान, संस्कृति और जीवनोपयोगी ज्ञान को भावी पीढ़ियों तक पहुँचाना है। यह प्रयास केवल संरक्षण नहीं, बल्कि एक आध्यात्मिक साधना और संस्कृति रक्षा का अटूट व्रत है।
+
+वर्तमान में आचार्य श्री समयसागर जी महाराज अपनी दिव्य कृपा से इस पावन मार्ग पर हमारा मार्गदर्शन कर रहे हैं, वहीं अर्हम योग के प्रणेता श्री 108 प्रणम्य सागर जी महाराज ने इस पवित्र अभियान को प्रारंभिक सहयोग प्रदान किया।`,
+  icon: <Scroll className="h-8 w-8" />,
+  className: 'md:col-span-2 md:row-span-2',
+  gradient: 'bg-gradient-saffron'
+},
     {
       title: language === 'en' ? 'Core Principles' : 'मूल सिद्धांत',
       description: language === 'en'
@@ -60,9 +82,36 @@ const HomePage: React.FC = () => {
     }
   ];
 
+  const supporters = [
+    {
+      name: 'हथकरघा',
+      descriptionHi: 'आचार्य महाराज की प्रेरणा से प्रारंभ एक आत्मनिर्भरता आंदोलन, जिसने ग्रामोद्योग, स्वदेशी परंपरा और रोज़गार को नया जीवन दिया।',
+      descriptionEn: 'An initiative inspired by Acharya Maharaj to revive village industries, indigenous traditions, and employment.',
+      image: hathkargaImage
+    },
+    {
+      name: 'शांति धारा',
+      descriptionHi: 'प्राचीन भारतीय संस्कृति के करुणा-संस्कारों को पुनर्जीवित करने का एक अनुपम प्रयास है, जो समाज में दया, शांति और अध्यात्म का अमृत संचार करता है।',
+      descriptionEn: 'A unique effort to revive the compassionate values of ancient Indian culture, spreading peace and spirituality.',
+      image: shantiDharaImage
+    },
+    {
+      name: 'C.A. Aashish Jain',
+      descriptionHi: 'हमारे हमेशा के समर्थक 🌟',
+      descriptionEn: 'Our all-time supporter 🌟',
+      image: aashishJainImage
+    },
+    {
+      name: 'अर्हं ध्यान योग',
+      descriptionHi: 'अर्हं ध्यान योग, भारतीय श्रमण सिद्धांतों "ध्यान योग" की सबसे प्राचीन योग तकनीक है। यह मुनि श्री प्रणम्य सागर जी महाराज द्वारा प्रतिपादित अग्रणी योग संस्थानों में से एक है और भारत सरकार के आयुष मंत्रालय द्वारा मान्यता प्राप्त है।',
+      descriptionEn: 'One of the oldest meditation institutions based on the ancient Indian "Dhyan Yoga" principles, recognized by the Ministry of AYUSH.',
+      image: arhamDhyanYogaImage
+    }
+  ];
+
   const handleCardClick = (manuscript: any) => {
     setSelectedManuscript(manuscript);
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); // optional: scroll to detail section
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
   return (
@@ -222,7 +271,6 @@ const HomePage: React.FC = () => {
                 />
                 <CardContent className="md:w-2/3">
                   <p className="text-muted-foreground text-lg">
-                    {/* Meaningful description */}
                     {language === 'en'
                       ? 'This manuscript is a precious window into the philosophy, teachings, and cultural legacy of Jainism. Explore its wisdom and reflect upon its eternal values.'
                       : 'यह पांडुलिपि जैन धर्म के दर्शन, शिक्षाओं और सांस्कृतिक विरासत की अमूल्य झलक प्रस्तुत करती है। इसकी गहनता को समझें और इसके शाश्वत मूल्यों पर चिंतन करें।'}
@@ -264,6 +312,31 @@ const HomePage: React.FC = () => {
           </Card>
         </div>
       </section>
+
+ {/* Supporters Section */}
+<section className="py-12 lg:py-16 bg-muted/20">
+  <div className="container mx-auto px-4">
+    <div className="text-center mb-8">
+      <h2 className="font-serif text-2xl md:text-3xl font-bold mb-2">
+        {language === 'en' ? 'Our Supporters' : 'सहयोगकर्ता'}
+      </h2>
+      <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
+        {language === 'en'
+          ? 'We are grateful to the following organizations and individuals for their support.'
+          : 'हम अपने निम्नलिखित संस्थाओं और व्यक्तियों के समर्थन के लिए आभारी हैं।'}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-4 items-center justify-items-center">
+      <img src={hathkargaImage} alt="हथकरघा" className="h-16 object-contain" />
+      <img src={shantiDharaImage} alt="शांति धारा" className="h-16 object-contain" />
+      <img src={aashishJainImage} alt="C.A. Aashish Jain" className="h-16 object-contain" />
+      <img src={arhamDhyanYogaImage} alt="अर्हं ध्यान योग" className="h-24 object-contain" />
+      {/* Add more supporters here */}
+    </div>
+  </div>
+</section>
+
     </div>
   );
 };

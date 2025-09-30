@@ -148,7 +148,7 @@ const ResearcherSignupPage: React.FC = () => {
 
               {/* ID Proof */}
               <div className="space-y-2">
-                <Label htmlFor="idProof">ID Proof (e.g., University ID)</Label>
+                <Label htmlFor="idProof">ID Proof</Label>
                 <Input id="idProof" name="idProof" type="file" onChange={(e) => setIdProofFile(e.target.files?.[0] || null)} required />
               </div>
 
